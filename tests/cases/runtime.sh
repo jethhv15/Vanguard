@@ -25,3 +25,29 @@ vg_assert_return_code \
     0 \
     "$(vg_runtime_is_initialized; echo $?)" \
     "Runtime reports initialized"
+
+vg_runtime_mark_discovered >/dev/null 2>&1
+
+vg_assert_true \
+    "[ \"$VG_RUNTIME_DISCOVERED\" = \"true\" ]" \
+    "Runtime should be marked discovered"
+
+vg_runtime_mark_validated >/dev/null 2>&1
+
+vg_assert_true \
+    "[ \"$VG_RUNTIME_VALIDATED\" = \"true\" ]" \
+    "Runtime should be marked validated"
+
+vg_runtime_reset >/dev/null 2>&1
+
+vg_assert_true \
+    "[ \"$VG_RUNTIME_INITIALIZED\" = \"false\" ]" \
+    "Runtime should reset initialization state"
+
+vg_assert_true \
+    "[ \"$VG_RUNTIME_DISCOVERED\" = \"false\" ]" \
+    "Runtime should reset discovery state"
+
+vg_assert_true \
+    "[ \"$VG_RUNTIME_VALIDATED\" = \"false\" ]" \
+    "Runtime should reset validation state"
