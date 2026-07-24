@@ -18,4 +18,4 @@ vg_assert_return_code \
 
 vg_assert_true \
     "[ -n \"$VG_ABI\" ]" \
-    "ABI should not be empty"
+    "VG_ABI should not be empty"
