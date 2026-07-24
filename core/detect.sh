@@ -21,6 +21,7 @@ VG_ANDROID=""
 VG_SDK=""
 VG_KERNEL=""
 VG_KERNELSU=""
+VG_SELINUX=""
 
 #
 # Public Functions
@@ -43,13 +44,13 @@ vg_detect_device() {
     return "$VG_SUCCESS"
 }
 
-vg_detect() {
-    case "$1" in
-        device)
-            vg_detect_device
-            ;;
-        *)
-            return "$VG_ERR_GENERAL"
-            ;;
-    esac
+vg_detect_selinux() {
+    if command -v getenforce >/dev/null 2>&1; then
+        VG_SELINUX="$(getenforce)"
+        return "$VG_SUCCESS"
+    fi
+
+    VG_SELINUX="UNKNOWN"
+
+    return "$VG_ERR_UNSUPPORTED"
 }
