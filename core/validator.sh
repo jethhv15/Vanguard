@@ -17,15 +17,14 @@
 
 vg_validate_environment() {
 
-    vg_detect_device
+    vg_detect_device || return "$VG_ERR_INTERNAL"
 
-    if [ -z "$VG_DEVICE" ]; then
-        return "$VG_ERR_UNSUPPORTED"
-    fi
-
-    if [ -z "$VG_ANDROID" ]; then
-        return "$VG_ERR_UNSUPPORTED"
-    fi
+    [ -n "$VG_DEVICE" ] || return "$VG_ERR_UNSUPPORTED"
+    [ -n "$VG_BRAND" ] || return "$VG_ERR_UNSUPPORTED"
+    [ -n "$VG_MODEL" ] || return "$VG_ERR_UNSUPPORTED"
+    [ -n "$VG_ANDROID" ] || return "$VG_ERR_UNSUPPORTED"
+    [ -n "$VG_SDK" ] || return "$VG_ERR_UNSUPPORTED"
+    [ -n "$VG_KERNEL" ] || return "$VG_ERR_UNSUPPORTED"
 
     return "$VG_SUCCESS"
 }
