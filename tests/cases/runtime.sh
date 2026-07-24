@@ -11,6 +11,10 @@ CORE_DIR="$(CDPATH= cd -- "$TEST_DIR/../core" && pwd)"
 . "$CORE_DIR/constants.sh"
 . "$CORE_DIR/runtime.sh"
 
+#
+# Runtime initialization
+#
+
 vg_assert_true \
     "[ \"$VG_RUNTIME_INITIALIZED\" = \"false\" ]" \
     "Runtime should start uninitialized"
@@ -25,6 +29,10 @@ vg_assert_return_code \
     0 \
     "$(vg_runtime_is_initialized; echo $?)" \
     "Runtime reports initialized"
+
+#
+# Runtime state management
+#
 
 vg_runtime_mark_discovered >/dev/null 2>&1
 
@@ -51,3 +59,21 @@ vg_assert_true \
 vg_assert_true \
     "[ \"$VG_RUNTIME_VALIDATED\" = \"false\" ]" \
     "Runtime should reset validation state"
+
+#
+# Runtime boot sequence
+#
+
+vg_runtime_boot >/dev/null 2>&1
+
+vg_assert_true \
+    "[ \"$VG_RUNTIME_INITIALIZED\" = \"true\" ]" \
+    "Runtime boot should initialize runtime"
+
+vg_assert_true \
+    "[ \"$VG_RUNTIME_DISCOVERED\" = \"true\" ]" \
+    "Runtime boot should complete discovery"
+
+vg_assert_true \
+    "[ \"$VG_RUNTIME_VALIDATED\" = \"true\" ]" \
+    "Runtime boot should complete validation"
