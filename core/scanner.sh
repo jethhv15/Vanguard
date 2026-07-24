@@ -24,15 +24,13 @@ VG_MODULES_DIR="${VG_MODULES_DIR:-modules}"
 
 vg_scan_modules() {
 
-    if [ ! -d "$VG_MODULES_DIR" ]; then
-        return "$VG_SUCCESS"
-    fi
+    [ -d "$VG_MODULES_DIR" ] || return "$VG_SUCCESS"
 
     for module in "$VG_MODULES_DIR"/*; do
 
         [ -d "$module" ] || continue
 
-        basename "$module"
+        printf '%s\n' "$module"
 
     done
 
