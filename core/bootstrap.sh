@@ -24,11 +24,18 @@ vg_bootstrap() {
 
     vg_info "Initializing Project Vanguard..."
 
-    vg_config_load || return $?
+    if ! vg_config_load; then
+        vg_error "Failed to load configuration."
+        return "$VG_ERR_CONFIG"
+    fi
 
-    vg_validate_environment || return $?
+    if ! vg_validate_environment; then
+        vg_error "Environment validation failed."
+        return "$VG_ERR_UNSUPPORTED"
+    fi
 
     vg_info "Environment validated."
+    vg_info "Bootstrap completed successfully."
 
     return "$VG_SUCCESS"
 }
