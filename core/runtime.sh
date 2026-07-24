@@ -31,6 +31,29 @@ vg_runtime_init() {
     return "$VG_SUCCESS"
 }
 
+vg_runtime_mark_discovered() {
+
+    VG_RUNTIME_DISCOVERED="true"
+
+    return "$VG_SUCCESS"
+}
+
+vg_runtime_mark_validated() {
+
+    VG_RUNTIME_VALIDATED="true"
+
+    return "$VG_SUCCESS"
+}
+
+vg_runtime_reset() {
+
+    VG_RUNTIME_INITIALIZED="false"
+    VG_RUNTIME_DISCOVERED="false"
+    VG_RUNTIME_VALIDATED="false"
+
+    return "$VG_SUCCESS"
+}
+
 vg_runtime_is_initialized() {
 
     [ "$VG_RUNTIME_INITIALIZED" = "true" ]
