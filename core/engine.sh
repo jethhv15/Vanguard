@@ -24,7 +24,7 @@ vg_engine_start() {
     fi
 
     #
-    # Module pipeline
+    # Module Pipeline
     #
     # Scanner
     # Parser
