@@ -31,6 +31,30 @@ vg_assert_equal() {
     fi
 }
 
+vg_assert_true() {
+    if "$1"; then
+        vg_test_pass "$2"
+    else
+        vg_test_fail "$2"
+    fi
+}
+
+vg_assert_false() {
+    if "$1"; then
+        vg_test_fail "$2"
+    else
+        vg_test_pass "$2"
+    fi
+}
+
+vg_assert_return_code() {
+    expected="$1"
+    actual="$2"
+    message="$3"
+
+    vg_assert_equal "$expected" "$actual" "$message"
+}
+
 vg_test_summary() {
     printf '\n'
     printf '=============================\n'
