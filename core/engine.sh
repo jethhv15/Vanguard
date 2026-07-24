@@ -12,6 +12,7 @@ CORE_DIR="$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)"
 
 . "$CORE_DIR/constants.sh"
 . "$CORE_DIR/runtime.sh"
+. "$CORE_DIR/scanner.sh"
 
 #
 # Public Functions
@@ -19,16 +20,19 @@ CORE_DIR="$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)"
 
 vg_engine_start() {
 
-    if ! vg_runtime_is_initialized; then
-        return "$VG_ERR_INTERNAL"
-    fi
+    vg_runtime_is_initialized || return "$VG_ERR_INTERNAL"
 
     #
-    # Module Pipeline
+    # Scan available modules
     #
-    # Scanner
+
+    vg_scan_modules >/dev/null || return $?
+
+    #
+    # Module pipeline
+    #
     # Parser
-    # Validator
+    # Module Validator
     # Loader
     # Lifecycle
     #
