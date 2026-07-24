@@ -22,6 +22,7 @@ VG_SDK=""
 VG_KERNEL=""
 VG_KERNELSU=""
 VG_SELINUX=""
+VG_ABI=""
 
 #
 # Public Functions
@@ -51,6 +52,18 @@ vg_detect_selinux() {
     fi
 
     VG_SELINUX="UNKNOWN"
+
+    return "$VG_ERR_UNSUPPORTED"
+}
+
+vg_detect_abi() {
+    VG_ABI="$(getprop ro.product.cpu.abi)"
+
+    if [ -n "$VG_ABI" ]; then
+        return "$VG_SUCCESS"
+    fi
+
+    VG_ABI="UNKNOWN"
 
     return "$VG_ERR_UNSUPPORTED"
 }
