@@ -15,7 +15,10 @@
 #
 
 VG_DEVICE=""
+VG_BRAND=""
+VG_MODEL=""
 VG_ANDROID=""
+VG_SDK=""
 VG_KERNEL=""
 VG_KERNELSU=""
 
@@ -25,7 +28,10 @@ VG_KERNELSU=""
 
 vg_detect_device() {
     VG_DEVICE="$(getprop ro.product.device)"
+    VG_BRAND="$(getprop ro.product.brand)"
+    VG_MODEL="$(getprop ro.product.model)"
     VG_ANDROID="$(getprop ro.build.version.release)"
+    VG_SDK="$(getprop ro.build.version.sdk)"
     VG_KERNEL="$(uname -r)"
 
     if [ -d "/data/adb/ksu" ] || [ -d "/data/adb/modules" ]; then
