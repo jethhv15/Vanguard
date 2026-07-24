@@ -75,7 +75,5 @@ vg_runtime_boot() {
 
     vg_runtime_mark_validated
 
-    vg_engine_start || return $?
-
     return "$VG_SUCCESS"
 }
