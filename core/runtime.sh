@@ -11,6 +11,8 @@
 CORE_DIR="$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)"
 
 . "$CORE_DIR/constants.sh"
+. "$CORE_DIR/discovery.sh"
+. "$CORE_DIR/validator.sh"
 
 #
 # Global Variables
@@ -57,4 +59,21 @@ vg_runtime_reset() {
 vg_runtime_is_initialized() {
 
     [ "$VG_RUNTIME_INITIALIZED" = "true" ]
+}
+
+vg_runtime_boot() {
+
+    vg_runtime_reset
+
+    vg_runtime_init || return $?
+
+    vg_discover || return $?
+
+    vg_runtime_mark_discovered
+
+    vg_validate_environment || return $?
+
+    vg_runtime_mark_validated
+
+    return "$VG_SUCCESS"
 }
