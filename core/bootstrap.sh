@@ -39,9 +39,3 @@ vg_bootstrap() {
 
     return "$VG_SUCCESS"
 }
-
-#
-# Entry Point
-#
-
-vg_bootstrap
