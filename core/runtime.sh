@@ -13,7 +13,6 @@ CORE_DIR="$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)"
 . "$CORE_DIR/constants.sh"
 . "$CORE_DIR/discovery.sh"
 . "$CORE_DIR/validator.sh"
-. "$CORE_DIR/engine.sh"
 
 #
 # Global Variables
