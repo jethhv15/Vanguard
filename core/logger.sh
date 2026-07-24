@@ -34,7 +34,35 @@ _vg_timestamp() {
 #
 
 vg_log() {
-    local level="$1"
+    level="$1"
+    shift
+
+    _vg_is_valid_level "$level" || return "$VG_ERR_GENERAL"
+
+    if [ $# -eq 0 ]; then
+        return "$VG_ERR_GENERAL"
+    fi
+
+    printf '%s [%s] %s\n' "$(_vg_timestamp)" "$level" "$*"
+
+    return "$VG_SUCCESS"
+}
+
+vg_info() {
+    vg_log "$VG_LOG_INFO" "$@"
+}
+
+vg_warn() {
+    vg_log "$VG_LOG_WARN" "$@"
+}
+
+vg_error() {
+    vg_log "$VG_LOG_ERROR" "$@"
+}
+
+vg_debug() {
+    vg_log "$VG_LOG_DEBUG" "$@"
+}    local level="$1"
     shift
 
     _vg_is_valid_level "$level" || return "$VG_ERR_GENERAL"
