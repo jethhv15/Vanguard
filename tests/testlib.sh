@@ -1,0 +1,42 @@
+#!/system/bin/sh
+#
+# Project Vanguard
+# Test Library
+#
+
+PASS_COUNT=0
+FAIL_COUNT=0
+
+vg_test_pass() {
+    PASS_COUNT=$((PASS_COUNT + 1))
+    printf '[PASS] %s\n' "$1"
+}
+
+vg_test_fail() {
+    FAIL_COUNT=$((FAIL_COUNT + 1))
+    printf '[FAIL] %s\n' "$1"
+}
+
+vg_assert_equal() {
+    expected="$1"
+    actual="$2"
+    message="$3"
+
+    if [ "$expected" = "$actual" ]; then
+        vg_test_pass "$message"
+    else
+        vg_test_fail "$message"
+        printf '        expected: %s\n' "$expected"
+        printf '        actual  : %s\n' "$actual"
+    fi
+}
+
+vg_test_summary() {
+    printf '\n'
+    printf '=============================\n'
+    printf 'Tests Passed : %s\n' "$PASS_COUNT"
+    printf 'Tests Failed : %s\n' "$FAIL_COUNT"
+    printf '=============================\n'
+
+    [ "$FAIL_COUNT" -eq 0 ]
+}
