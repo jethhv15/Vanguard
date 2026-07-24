@@ -42,3 +42,14 @@ vg_detect_device() {
 
     return "$VG_SUCCESS"
 }
+
+vg_detect() {
+    case "$1" in
+        device)
+            vg_detect_device
+            ;;
+        *)
+            return "$VG_ERR_GENERAL"
+            ;;
+    esac
+}
