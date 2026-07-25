@@ -41,3 +41,13 @@ vg_fs_read() {
 
     cat "$path"
 }
+
+vg_fs_write() {
+
+    path="$1"
+    content="$2"
+
+    [ -n "$path" ] || return 1
+
+    printf '%s' "$content" > "$path"
+}
