@@ -29,5 +29,6 @@ vg_dispatch_hook() {
         [ "$current" = "$hook" ] || continue
 
         vg_invoke_callback "$callback"
+        
     done < "$VG_HOOK_REGISTRY"
 }
