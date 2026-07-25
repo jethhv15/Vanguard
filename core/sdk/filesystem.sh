@@ -30,3 +30,14 @@ vg_fs_is_dir() {
 
     [ -d "$path" ]
 }
+
+vg_fs_read() {
+
+    path="$1"
+
+    [ -n "$path" ] || return 1
+
+    [ -f "$path" ] || return 1
+
+    cat "$path"
+}
