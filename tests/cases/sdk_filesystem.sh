@@ -1,8 +1,5 @@
 #!/system/bin/sh
 
-TEST_DIR="$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd)"
-CORE_DIR="$(CDPATH= cd -- "$TEST_DIR/../core" && pwd)"
-
 . "$CORE_DIR/sdk/sdk.sh"
 
 TMP_FILE="/tmp/vanguard_sdk_test"
