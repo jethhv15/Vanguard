@@ -10,6 +10,7 @@ CORE_DIR="$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)"
 . "$CORE_DIR/parser.sh"
 . "$CORE_DIR/context.sh"
 . "$CORE_DIR/registry.sh"
+. "$CORE_DIR/sdk/state.sh"
 
 #
 # Public API
@@ -31,6 +32,8 @@ vg_dispatch_module() {
 
     vg_context_set "$module_path" || return $?
 
+    vg_state_set "$VG_MODULE_STATE_LOADED"
+
     callback="vg_${VG_MODULE_ID}_${action}"
 
     command -v "$callback" >/dev/null 2>&1 || {
@@ -38,8 +41,12 @@ vg_dispatch_module() {
         return "$VG_ERR_INVALID"
     }
 
+    vg_state_set "$VG_MODULE_STATE_STARTED"
+
     "$callback"
     result=$?
+
+    vg_state_set "$VG_MODULE_STATE_STOPPED"
 
     vg_context_clear
 
