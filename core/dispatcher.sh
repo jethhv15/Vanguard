@@ -11,6 +11,7 @@ CORE_DIR="$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)"
 . "$CORE_DIR/context.sh"
 . "$CORE_DIR/registry.sh"
 . "$CORE_DIR/state.sh"
+. "$CORE_DIR/callback.sh"
 
 #
 # Public API
@@ -36,15 +37,15 @@ vg_dispatch_module() {
 
     callback="vg_${VG_MODULE_ID}_${action}"
 
-    command -v "$callback" >/dev/null 2>&1 || {
-        vg_context_clear
-        return "$VG_ERR_INVALID"
-    }
-
     vg_state_set "$VG_MODULE_STATE_STARTED"
 
-    "$callback"
+    vg_invoke_callback "$callback"
     result=$?
+
+    if [ "$result" = "$VG_ERR_NOT_FOUND" ]; then
+        vg_context_clear
+        return "$VG_ERR_INVALID"
+    fi
 
     vg_state_set "$VG_MODULE_STATE_STOPPED"
 
