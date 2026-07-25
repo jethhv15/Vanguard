@@ -40,7 +40,7 @@ vg_engine_start() {
             return $?
         }
 
-        vg_registry_add "$VG_MODULE_ID" || {
+        vg_registry_add "$VG_MODULE_ID" "$module" || {
             IFS=$OLD_IFS
             return $?
         }
