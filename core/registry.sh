@@ -24,6 +24,10 @@ vg_registry_add() {
     [ -n "$module_id" ] || return 1
     [ -n "$module_path" ] || return 1
 
+    if vg_registry_get_path "$module_id" >/dev/null 2>&1; then
+        return "$VG_ERR_GENERAL"
+    fi
+
     entry="${module_id}|${module_path}"
 
     if [ -z "$VG_LOADED_MODULES" ]; then
@@ -34,6 +38,8 @@ ${entry}"
     fi
 
     VG_LOADED_MODULE_COUNT=$((VG_LOADED_MODULE_COUNT + 1))
+
+    return "$VG_SUCCESS"
 }
 
 vg_registry_get_path() {
@@ -54,10 +60,10 @@ vg_registry_get_path() {
         if [ "$id" = "$module_id" ]; then
             IFS="$old_ifs"
             printf '%s\n' "$path"
-            return 0
+            return "$VG_SUCCESS"
         fi
     done
 
     IFS="$old_ifs"
-    return 1
+    return "$VG_ERR_NOT_FOUND"
 }
