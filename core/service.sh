@@ -8,6 +8,6 @@ vg_register_service() {
     return 0
 }
 
-vg_get_service() {
+vg_resolve_service() {
     return 0
 }
