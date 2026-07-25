@@ -8,7 +8,11 @@
 # Load Dependencies
 #
 
-. "$(dirname "$0")/constants.sh"
+if [ -z "${CORE_DIR:-}" ]; then
+    CORE_DIR="$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)"
+fi
+
+. "$CORE_DIR/constants.sh"
 
 #
 # Global Variables
@@ -40,50 +44,36 @@ vg_detect_device() {
     VG_DEVICE="$(getprop ro.product.device)"
     VG_BRAND="$(getprop ro.product.brand)"
     VG_MODEL="$(getprop ro.product.model)"
-    VG_ANDROID="$(getprop ro.build.version.release)"
-    VG_SDK="$(getprop ro.build.version.sdk)"
-    VG_KERNEL="$(uname -r)"
 
     return "$VG_SUCCESS"
 }
 
-vg_detect_selinux() {
-    if command -v getenforce >/dev/null 2>&1; then
-        VG_SELINUX="$(getenforce)"
-        return "$VG_SUCCESS"
-    fi
+vg_detect_system() {
+    VG_ANDROID="$(getprop ro.build.version.release)"
+    VG_SDK="$(getprop ro.build.version.sdk)"
+    VG_KERNEL="$(uname -r)"
+    VG_SELINUX="$(getenforce 2>/dev/null)"
 
-    VG_SELINUX="UNKNOWN"
-
-    return "$VG_ERR_UNSUPPORTED"
+    return "$VG_SUCCESS"
 }
 
 vg_detect_abi() {
     VG_ABI="$(getprop ro.product.cpu.abi)"
 
-    if [ -n "$VG_ABI" ]; then
-        return "$VG_SUCCESS"
-    fi
+    [ -n "$VG_ABI" ] || return "$VG_ERR_GENERAL"
 
-    VG_ABI="UNKNOWN"
-
-    return "$VG_ERR_UNSUPPORTED"
+    return "$VG_SUCCESS"
 }
 
 vg_detect_root_manager() {
-    VG_KERNELSU="false"
-    VG_ROOT_MANAGER="NONE"
 
-    if [ -d "/data/adb/ksu" ]; then
-        VG_KERNELSU="true"
-        VG_ROOT_MANAGER="KernelSU"
-        return "$VG_SUCCESS"
-    fi
-
-    if [ -d "/data/adb/modules" ]; then
+    if command -v magisk >/dev/null 2>&1; then
         VG_ROOT_MANAGER="Magisk"
-        return "$VG_SUCCESS"
+    elif [ -d "/data/adb/ksu" ]; then
+        VG_ROOT_MANAGER="KernelSU"
+    else
+        VG_ROOT_MANAGER="None"
     fi
 
-    return "$VG_ERR_UNSUPPORTED"
+    return "$VG_SUCCESS"
 }
