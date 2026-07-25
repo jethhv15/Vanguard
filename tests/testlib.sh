@@ -18,6 +18,7 @@ vg_test_fail() {
 }
 
 vg_assert_equal() {
+
     expected="$1"
     actual="$2"
     message="$3"
@@ -32,6 +33,7 @@ vg_assert_equal() {
 }
 
 vg_assert_true() {
+
     if eval "$1"; then
         vg_test_pass "$2"
     else
@@ -40,6 +42,7 @@ vg_assert_true() {
 }
 
 vg_assert_false() {
+
     if eval "$1"; then
         vg_test_fail "$2"
     else
@@ -48,6 +51,7 @@ vg_assert_false() {
 }
 
 vg_assert_return_code() {
+
     expected="$1"
     actual="$2"
     message="$3"
@@ -56,10 +60,11 @@ vg_assert_return_code() {
 }
 
 vg_test_summary() {
+
     printf '\n'
     printf '=============================\n'
     printf 'Tests Passed : %s\n' "$PASS_COUNT"
-    printf 'Tests Failed : %s\n' "$FAIL_COUNT"
+    printf 'Tests Failed : %s\n'
     printf '=============================\n'
 
     [ "$FAIL_COUNT" -eq 0 ]

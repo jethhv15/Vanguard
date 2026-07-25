@@ -16,7 +16,10 @@ export CORE_DIR
 export CONFIG_DIR
 export MODULE_DIR
 
-. "$TEST_DIR/testlib.sh"
+
+TOTAL_PASS=0
+TOTAL_FAIL=0
+
 
 for testcase in "$TEST_DIR"/cases/*.sh
 do
@@ -26,6 +29,23 @@ do
     printf 'Running %s\n' "$(basename "$testcase")"
 
     sh "$testcase"
+
+    rc=$?
+
+    if [ "$rc" -eq 0 ]; then
+        TOTAL_PASS=$((TOTAL_PASS + 1))
+    else
+        TOTAL_FAIL=$((TOTAL_FAIL + 1))
+    fi
+
 done
 
-vg_test_summary
+
+printf '\n'
+printf '=============================\n'
+printf 'Test Cases Passed : %s\n' "$TOTAL_PASS"
+printf 'Test Cases Failed : %s\n' "$TOTAL_FAIL"
+printf '=============================\n'
+
+
+[ "$TOTAL_FAIL" -eq 0 ]
