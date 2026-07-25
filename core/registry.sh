@@ -23,8 +23,8 @@ vg_registry_add() {
     module_id="$1"
     module_path="$2"
 
-    [ -n "$module_id" ] || return 1
-    [ -n "$module_path" ] || return 1
+    [ -n "$module_id" ] || return "$VG_ERR_INVALID"
+    [ -n "$module_path" ] || return "$VG_ERR_INVALID"
 
     if vg_registry_get_path "$module_id" >/dev/null 2>&1; then
         return "$VG_ERR_GENERAL"
@@ -48,7 +48,7 @@ vg_registry_get_path() {
 
     module_id="$1"
 
-    [ -n "$module_id" ] || return 1
+    [ -n "$module_id" ] || return "$VG_ERR_INVALID"
 
     old_ifs="$IFS"
     IFS='
