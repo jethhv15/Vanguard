@@ -6,27 +6,21 @@
 
 vg_example_init() {
 
-    #
-    # Initialize module resources
-    #
+    echo "[Example] init"
 
     return "$VG_SUCCESS"
 }
 
 vg_example_start() {
 
-    #
-    # Module logic starts here
-    #
+    echo "[Example] start"
 
     return "$VG_SUCCESS"
 }
 
 vg_example_stop() {
 
-    #
-    # Cleanup before module unload
-    #
+    echo "[Example] stop"
 
     return "$VG_SUCCESS"
 }
