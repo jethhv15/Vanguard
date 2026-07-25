@@ -4,7 +4,7 @@
 # Example Module
 #
 
-vg_module_init() {
+vg_example_init() {
 
     #
     # Initialize module resources
@@ -13,7 +13,7 @@ vg_module_init() {
     return "$VG_SUCCESS"
 }
 
-vg_module_start() {
+vg_example_start() {
 
     #
     # Module logic starts here
@@ -22,7 +22,7 @@ vg_module_start() {
     return "$VG_SUCCESS"
 }
 
-vg_module_stop() {
+vg_example_stop() {
 
     #
     # Cleanup before module unload
