@@ -4,18 +4,6 @@
 # SDK State API
 #
 
-vg_state_get() {
+CORE_DIR="$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd)"
 
-    printf '%s\n' "$VG_CURRENT_MODULE_STATE"
-}
-
-vg_state_set() {
-
-    state="$1"
-
-    [ -n "$state" ] || return "$VG_ERROR_INVALID_ARGUMENT"
-
-    VG_CURRENT_MODULE_STATE="$state"
-
-    return "$VG_SUCCESS"
-}
+. "$CORE_DIR/state.sh"
