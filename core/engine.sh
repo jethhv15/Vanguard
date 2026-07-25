@@ -17,7 +17,6 @@ CORE_DIR="$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)"
 . "$CORE_DIR/service.sh"
 . "$CORE_DIR/event.sh"
 . "$CORE_DIR/callback.sh"
-. "$CORE_DIR/error.sh"
 
 vg_engine_start() {
 
