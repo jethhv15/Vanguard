@@ -24,3 +24,4 @@ SDK_DIR="$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)"
 
 . "$SDK_DIR/logger.sh"
 . "$SDK_DIR/property.sh"
+. "$SDK_DIR/filesystem.sh"
