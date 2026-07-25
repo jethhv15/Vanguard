@@ -36,13 +36,13 @@ vg_load_module() {
 
     . "$entry" || return "$VG_ERR_INTERNAL"
 
-    command -v vg_module_init >/dev/null 2>&1 \
+    command -v "vg_${VG_MODULE_ID}_init" >/dev/null 2>&1 \
         || return "$VG_ERR_INVALID"
 
-    command -v vg_module_start >/dev/null 2>&1 \
+    command -v "vg_${VG_MODULE_ID}_start" >/dev/null 2>&1 \
         || return "$VG_ERR_INVALID"
 
-    command -v vg_module_stop >/dev/null 2>&1 \
+    command -v "vg_${VG_MODULE_ID}_stop" >/dev/null 2>&1 \
         || return "$VG_ERR_INVALID"
 
     return "$VG_SUCCESS"
