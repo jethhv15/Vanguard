@@ -4,36 +4,36 @@
 # Lifecycle Manager
 #
 
-#
-# Load Dependencies
-#
-
 CORE_DIR="$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)"
 
 . "$CORE_DIR/constants.sh"
-. "$CORE_DIR/registry.sh"
+. "$CORE_DIR/dispatcher.sh"
 
 #
-# Private
+# Internal
 #
 
 vg_lifecycle_execute() {
 
-    suffix="$1"
+    action="$1"
 
-    OLD_IFS=$IFS
+    [ -n "$action" ] || return "$VG_ERR_INVALID"
+
+    old_ifs="$IFS"
     IFS='
 '
 
-    for module in $VG_LOADED_MODULES
+    for entry in $VG_LOADED_MODULES
     do
-        "vg_${module}_${suffix}" || {
-            IFS=$OLD_IFS
+        module_id="${entry%%|*}"
+
+        vg_dispatch_module "$module_id" "$action" || {
+            IFS="$old_ifs"
             return $?
         }
     done
 
-    IFS=$OLD_IFS
+    IFS="$old_ifs"
 
     return "$VG_SUCCESS"
 }
@@ -43,16 +43,13 @@ vg_lifecycle_execute() {
 #
 
 vg_lifecycle_init() {
-
     vg_lifecycle_execute init
 }
 
 vg_lifecycle_start() {
-
     vg_lifecycle_execute start
 }
 
 vg_lifecycle_stop() {
-
     vg_lifecycle_execute stop
 }
