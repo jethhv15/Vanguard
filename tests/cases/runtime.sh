@@ -4,9 +4,6 @@
 # Runtime Tests
 #
 
-TEST_DIR="$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd)"
-CORE_DIR="$(CDPATH= cd -- "$TEST_DIR/../core" && pwd)"
-
 . "$TEST_DIR/testlib.sh"
 . "$CORE_DIR/constants.sh"
 . "$CORE_DIR/runtime.sh"
