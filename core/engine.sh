@@ -12,6 +12,7 @@ CORE_DIR="$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)"
 . "$CORE_DIR/loader.sh"
 . "$CORE_DIR/parser.sh"
 . "$CORE_DIR/registry.sh"
+. "$CORE_DIR/lifecycle.sh"
 
 vg_engine_start() {
 
@@ -46,6 +47,10 @@ vg_engine_start() {
     done
 
     IFS=$OLD_IFS
+
+    vg_lifecycle_init || return $?
+
+    vg_lifecycle_start || return $?
 
     return "$VG_SUCCESS"
 }
