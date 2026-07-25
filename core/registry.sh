@@ -14,6 +14,8 @@ VG_LOADED_MODULE_COUNT=0
 vg_registry_reset() {
     VG_LOADED_MODULES=""
     VG_LOADED_MODULE_COUNT=0
+
+    return "$VG_SUCCESS"
 }
 
 vg_registry_add() {
@@ -65,5 +67,6 @@ vg_registry_get_path() {
     done
 
     IFS="$old_ifs"
+
     return "$VG_ERR_NOT_FOUND"
 }
