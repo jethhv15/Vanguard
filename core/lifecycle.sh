@@ -31,10 +31,17 @@ vg_lifecycle_execute() {
     do
         module_id="${entry%%|*}"
 
-        if ! vg_dispatch_module "$module_id" "$action"; then
-            result=$?
+        [ -n "$module_id" ] || continue
+
+        vg_dispatch_module "$module_id" "$action"
+        rc=$?
+
+        if [ "$rc" -ne "$VG_SUCCESS" ]; then
+
+            lifecycle_error="$rc"
 
             if [ "$action" = "start" ]; then
+
                 rollback_ifs="$IFS"
                 IFS='
 '
@@ -45,20 +52,26 @@ vg_lifecycle_execute() {
                 done
 
                 IFS="$rollback_ifs"
+
             fi
 
             IFS="$old_ifs"
-            return "$result"
+
+            return "$lifecycle_error"
         fi
 
+
         if [ "$action" = "start" ]; then
+
             if [ -z "$started_modules" ]; then
                 started_modules="$module_id"
             else
                 started_modules="${started_modules}
 ${module_id}"
             fi
+
         fi
+
     done
 
     IFS="$old_ifs"
@@ -71,13 +84,21 @@ ${module_id}"
 #
 
 vg_lifecycle_init() {
+
     vg_lifecycle_execute init
+
 }
+
 
 vg_lifecycle_start() {
+
     vg_lifecycle_execute start
+
 }
 
+
 vg_lifecycle_stop() {
+
     vg_lifecycle_execute stop
+
 }

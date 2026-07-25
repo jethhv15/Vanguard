@@ -25,7 +25,7 @@ do
     printf '\n'
     printf 'Running %s\n' "$(basename "$testcase")"
 
-    . "$testcase"
+    sh "$testcase"
 done
 
 vg_test_summary
