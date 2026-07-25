@@ -1,15 +1,19 @@
 #!/system/bin/sh
 #
 # Project Vanguard
-# Environment Validator
+# Validation Component
 #
 
 #
 # Load Dependencies
 #
 
-. "$(dirname "$0")/constants.sh"
-. "$(dirname "$0")/detect.sh"
+if [ -z "${CORE_DIR:-}" ]; then
+    CORE_DIR="$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)"
+fi
+
+. "$CORE_DIR/constants.sh"
+. "$CORE_DIR/detect.sh"
 
 #
 # Public Functions
@@ -17,14 +21,8 @@
 
 vg_validate_environment() {
 
-    vg_detect_device || return "$VG_ERR_INTERNAL"
-
-    [ -n "$VG_DEVICE" ] || return "$VG_ERR_UNSUPPORTED"
-    [ -n "$VG_BRAND" ] || return "$VG_ERR_UNSUPPORTED"
-    [ -n "$VG_MODEL" ] || return "$VG_ERR_UNSUPPORTED"
-    [ -n "$VG_ANDROID" ] || return "$VG_ERR_UNSUPPORTED"
-    [ -n "$VG_SDK" ] || return "$VG_ERR_UNSUPPORTED"
-    [ -n "$VG_KERNEL" ] || return "$VG_ERR_UNSUPPORTED"
+    vg_detect_system || return $?
+    vg_detect_abi || return $?
 
     return "$VG_SUCCESS"
 }
