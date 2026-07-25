@@ -1,17 +1,16 @@
 #!/system/bin/sh
 #
 # Project Vanguard
-# Discovery Manager Tests
+# Discovery Test Cases
 #
-
-TEST_DIR="$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd)"
-CORE_DIR="$(CDPATH= cd -- "$TEST_DIR/../core" && pwd)"
 
 . "$TEST_DIR/testlib.sh"
 . "$CORE_DIR/constants.sh"
 . "$CORE_DIR/discovery.sh"
 
+vg_discover_modules >/dev/null 2>&1
+
 vg_assert_return_code \
     "$VG_SUCCESS" \
-    "$(vg_discover >/dev/null 2>&1; echo $?)" \
-    "vg_discover completes successfully"
+    "$?" \
+    "Module discovery completed successfully"
