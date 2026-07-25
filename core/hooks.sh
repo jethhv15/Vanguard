@@ -4,7 +4,7 @@
 # Hook Framework
 #
 
-VG_HOOKS=""
+VG_HOOK_REGISTRY="${VG_RUNTIME_DIR}/hooks"
 
 vg_register_hook() {
 
@@ -14,10 +14,7 @@ vg_register_hook() {
     [ -n "$hook" ] || return 1
     [ -n "$callback" ] || return 1
 
-    VG_HOOKS="${VG_HOOKS}${hook}|${callback}
-"
-
-    return 0
+    printf '%s|%s\n' "$hook" "$callback" >> "$VG_HOOK_REGISTRY"
 }
 
 vg_dispatch_hook() {
@@ -25,13 +22,14 @@ vg_dispatch_hook() {
     hook="$1"
 
     [ -n "$hook" ] || return 1
+    [ -f "$VG_HOOK_REGISTRY" ] || return 0
 
-    printf '%s' "$VG_HOOKS" | while IFS='|' read -r current callback
+    while IFS='|' read -r current callback
     do
         [ "$current" = "$hook" ] || continue
 
         command -v "$callback" >/dev/null 2>&1 || continue
 
         "$callback"
-    done
+    done < "$VG_HOOK_REGISTRY"
 }
