@@ -27,6 +27,12 @@ vg_validate_module() {
 
     [ -n "$VG_MODULE_VERSION_CODE" ] || return "$VG_ERR_INVALID"
 
+    case "$VG_MODULE_VERSION_CODE" in
+        *[!0-9]*)
+            return "$VG_ERR_INVALID"
+            ;;
+    esac
+
     [ -n "$VG_MODULE_AUTHOR" ] || return "$VG_ERR_INVALID"
 
     [ -n "$VG_MODULE_API" ] || return "$VG_ERR_INVALID"
