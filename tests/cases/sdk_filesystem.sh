@@ -5,12 +5,17 @@ CORE_DIR="$(CDPATH= cd -- "$TEST_DIR/../core" && pwd)"
 
 . "$CORE_DIR/sdk/sdk.sh"
 
-vg_fs_exists "/" || exit 1
-vg_fs_is_dir "/" || exit 1
-vg_fs_is_file "/system/build.prop" || exit 1
+TMP_FILE="/tmp/vanguard_sdk_test"
 
-content="$(vg_fs_read "/system/build.prop")"
+vg_fs_write "$TMP_FILE" "hello"
 
-[ -n "$content" ] || exit 1
+vg_fs_exists "$TMP_FILE" || exit 1
+vg_fs_is_file "$TMP_FILE" || exit 1
+
+content="$(vg_fs_read "$TMP_FILE")"
+
+[ "$content" = "hello" ] || exit 1
+
+rm -f "$TMP_FILE"
 
 exit 0
