@@ -15,6 +15,7 @@ CORE_DIR="$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)"
 . "$CORE_DIR/lifecycle.sh"
 . "$CORE_DIR/hooks.sh"
 . "$CORE_DIR/service.sh"
+. "$CORE_DIR/event.sh"
 
 vg_engine_start() {
 
