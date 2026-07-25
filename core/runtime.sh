@@ -71,7 +71,11 @@ vg_runtime_boot() {
 
     vg_runtime_mark_discovered
 
-    vg_validate_environment || return $?
+    if ! vg_validate_environment; then
+        result=$?
+        vg_runtime_reset
+        return "$result"
+    fi
 
     vg_runtime_mark_validated
 
