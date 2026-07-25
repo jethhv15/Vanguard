@@ -4,15 +4,12 @@
 # Module Dispatcher
 #
 
-#
-# Load Dependencies
-#
-
 CORE_DIR="$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)"
 
 . "$CORE_DIR/constants.sh"
 . "$CORE_DIR/parser.sh"
 . "$CORE_DIR/context.sh"
+. "$CORE_DIR/registry.sh"
 
 #
 # Public API
@@ -20,11 +17,13 @@ CORE_DIR="$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)"
 
 vg_dispatch_module() {
 
-    module_path="$1"
+    module_id="$1"
     action="$2"
 
-    [ -n "$module_path" ] || return "$VG_ERR_INVALID"
+    [ -n "$module_id" ] || return "$VG_ERR_INVALID"
     [ -n "$action" ] || return "$VG_ERR_INVALID"
+
+    module_path="$(vg_registry_get_path "$module_id")" || return $?
 
     manifest="$module_path/module.prop"
 
@@ -40,7 +39,6 @@ vg_dispatch_module() {
     }
 
     "$callback"
-
     result=$?
 
     vg_context_clear
