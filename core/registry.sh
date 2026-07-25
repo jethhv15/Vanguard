@@ -4,6 +4,10 @@
 # Registry
 #
 
+#
+# Runtime Storage
+#
+
 VG_LOADED_MODULES=""
 VG_LOADED_MODULE_COUNT=0
 
@@ -12,11 +16,13 @@ VG_LOADED_MODULE_COUNT=0
 #
 
 vg_registry_reset() {
+
     VG_LOADED_MODULES=""
     VG_LOADED_MODULE_COUNT=0
 
     return "$VG_SUCCESS"
 }
+
 
 vg_registry_add() {
 
@@ -44,6 +50,7 @@ ${entry}"
     return "$VG_SUCCESS"
 }
 
+
 vg_registry_get_path() {
 
     module_id="$1"
@@ -56,8 +63,8 @@ vg_registry_get_path() {
 
     for entry in $VG_LOADED_MODULES
     do
-        id="${entry%%|*}"
-        path="${entry#*|}"
+        id="$(printf '%s\n' "$entry" | cut -d'|' -f1)"
+        path="$(printf '%s\n' "$entry" | cut -d'|' -f2-)"
 
         if [ "$id" = "$module_id" ]; then
             IFS="$old_ifs"

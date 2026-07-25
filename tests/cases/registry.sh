@@ -1,11 +1,12 @@
 #!/system/bin/sh
 
 . "$TEST_DIR/testlib.sh"
+. "$CORE_DIR/constants.sh"
 . "$CORE_DIR/registry.sh"
 
 vg_registry_reset
 
-vg_registry_add "example"
+vg_registry_add "example" "modules/example"
 
 vg_assert_return_code \
     "$VG_SUCCESS" \

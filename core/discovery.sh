@@ -23,11 +23,15 @@ fi
 vg_discover() {
 
     vg_detect_device
-    vg_detect_selinux
+
+    vg_detect_system
+
     vg_detect_abi
+
     vg_detect_root_manager
 
     vg_detect_ab_slots
+
     vg_detect_dynamic_partitions
 
     return "$VG_SUCCESS"

@@ -11,5 +11,5 @@
 vg_detect_abi >/dev/null 2>&1
 
 vg_assert_true \
-    "[ -n \"$VG_DEVICE_ABI\" ]" \
+    "[ -n \"$VG_ABI\" ]" \
     "ABI detected successfully"

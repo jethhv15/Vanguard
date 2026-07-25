@@ -16,9 +16,8 @@ vg_invoke_callback() {
 
     [ -n "$callback" ] || return "$VG_ERR_INVALID"
 
-    if ! command -V "$callback" 2>/dev/null | grep -q "^${callback} is a function"; then
-        return "$VG_ERR_NOT_FOUND"
-    fi
+    command -v "$callback" >/dev/null 2>&1 \
+        || return "$VG_ERR_NOT_FOUND"
 
     "$callback"
 

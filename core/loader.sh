@@ -1,7 +1,7 @@
 #!/system/bin/sh
 #
 # Project Vanguard
-# Logger Component
+# Module Loader
 #
 
 #
@@ -13,41 +13,41 @@ if [ -z "${CORE_DIR:-}" ]; then
 fi
 
 . "$CORE_DIR/constants.sh"
-
-#
-# Private Functions
-#
-
-_vg_is_valid_level() {
-    case "$1" in
-        "$VG_LOG_INFO"|"$VG_LOG_WARN"|"$VG_LOG_ERROR"|"$VG_LOG_DEBUG")
-            return "$VG_SUCCESS"
-            ;;
-        *)
-            return "$VG_ERR_GENERAL"
-            ;;
-    esac
-}
-
-_vg_timestamp() {
-    date '+%Y-%m-%d %H:%M:%S'
-}
+. "$CORE_DIR/parser.sh"
+. "$CORE_DIR/module_validator.sh"
 
 #
 # Public Functions
 #
 
-vg_log() {
+vg_load_module() {
 
-    level="$1"
-    shift
+    module_path="$1"
 
-    _vg_is_valid_level "$level" || return "$VG_ERR_GENERAL"
+    [ -d "$module_path" ] || return "$VG_ERR_NOT_FOUND"
 
-    printf '[%s] [%s] %s\n' \
-        "$(_vg_timestamp)" \
-        "$level" \
-        "$*"
+    manifest="$module_path/module.prop"
+
+    vg_parse_manifest "$manifest" || return $?
+
+    vg_validate_module || return $?
+
+    entry="$module_path/$VG_MODULE_ENTRY"
+
+    [ -f "$entry" ] || return "$VG_ERR_NOT_FOUND"
+    [ -r "$entry" ] || return "$VG_ERR_INTERNAL"
+    [ -s "$entry" ] || return "$VG_ERR_INVALID"
+
+    . "$entry" || return "$VG_ERR_INTERNAL"
+
+    command -v "vg_${VG_MODULE_ID}_init" >/dev/null 2>&1 \
+        || return "$VG_ERR_INVALID"
+
+    command -v "vg_${VG_MODULE_ID}_start" >/dev/null 2>&1 \
+        || return "$VG_ERR_INVALID"
+
+    command -v "vg_${VG_MODULE_ID}_stop" >/dev/null 2>&1 \
+        || return "$VG_ERR_INVALID"
 
     return "$VG_SUCCESS"
 }
