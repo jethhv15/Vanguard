@@ -4,7 +4,13 @@
 # SDK Loader
 #
 
-SDK_DIR="$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)"
+#
+# Resolve SDK Directory
+#
+
+if [ -z "${SDK_DIR:-}" ]; then
+    SDK_DIR="$CORE_DIR/sdk"
+fi
 
 #
 # Framework APIs

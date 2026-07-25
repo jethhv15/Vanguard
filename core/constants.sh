@@ -32,6 +32,7 @@ VG_LOG_DEBUG="DEBUG"
 
 VG_NAME="Project Vanguard"
 VG_VERSION="0.1.0"
+VG_API_VERSION=1
 VG_AUTHOR="Jethh"
 
 #

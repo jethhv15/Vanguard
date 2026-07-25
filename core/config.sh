@@ -24,11 +24,16 @@ fi
 
 VG_CONFIG_FILE="$CONFIG_DIR/default.conf"
 
+if [ -z "${VG_MODULES_DIR:-}" ]; then
+    VG_MODULES_DIR="$CORE_DIR/../modules"
+fi
+
 #
 # Public Functions
 #
 
 vg_config_load() {
+
     if [ ! -f "$VG_CONFIG_FILE" ]; then
         return "$VG_ERR_CONFIG"
     fi
@@ -39,10 +44,12 @@ vg_config_load() {
 }
 
 vg_config_get() {
+
     eval "printf '%s' \"\${$1}\""
 }
 
 vg_config_set() {
+
     eval "$1=\"\$2\""
 
     return "$VG_SUCCESS"
