@@ -51,6 +51,16 @@ vg_parse_manifest() {
     while IFS='=' read -r key value
     do
 
+        #
+        # Ignore blank lines and comments
+        #
+
+        [ -n "$key" ] || continue
+
+        case "$key" in
+            \#*) continue ;;
+        esac
+
         case "$key" in
 
             id) VG_MODULE_ID="$value" ;;
