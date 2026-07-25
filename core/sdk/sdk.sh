@@ -8,3 +8,4 @@ SDK_DIR="$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)"
 
 . "$SDK_DIR/framework.sh"
 . "$SDK_DIR/module.sh"
+. "$SDK_DIR/logger.sh"
