@@ -28,8 +28,6 @@ vg_dispatch_hook() {
     do
         [ "$current" = "$hook" ] || continue
 
-        command -v "$callback" >/dev/null 2>&1 || continue
-
-        "$callback"
+        vg_invoke_callback "$callback"
     done < "$VG_HOOK_REGISTRY"
 }
