@@ -40,7 +40,7 @@ vg_resolve_service() {
         return "$VG_SUCCESS"
     done < "$VG_SERVICE_REGISTRY"
 
-    return "$VG_ERROR_NOT_FOUND"
+    return "$VG_ERR_NOT_FOUND"
 }
 
 vg_unregister_service() {
