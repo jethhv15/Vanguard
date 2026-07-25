@@ -33,6 +33,8 @@ vg_load_module() {
     entry="$module_path/$VG_MODULE_ENTRY"
 
     [ -f "$entry" ] || return "$VG_ERR_NOT_FOUND"
+    [ -r "$entry" ] || return "$VG_ERR_INTERNAL"
+    [ -s "$entry" ] || return "$VG_ERR_INVALID"
 
     . "$entry" || return "$VG_ERR_INTERNAL"
 
