@@ -21,5 +21,17 @@ vg_register_hook() {
 }
 
 vg_dispatch_hook() {
-    return 0
+
+    hook="$1"
+
+    [ -n "$hook" ] || return 1
+
+    printf '%s' "$VG_HOOKS" | while IFS='|' read -r current callback
+    do
+        [ "$current" = "$hook" ] || continue
+
+        command -v "$callback" >/dev/null 2>&1 || continue
+
+        "$callback"
+    done
 }
