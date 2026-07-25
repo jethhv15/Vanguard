@@ -66,7 +66,10 @@ vg_emit_event() {
         [ "$current" = "$event" ] || continue
 
         vg_invoke_callback "$callback"
-        
+        result=$?
+
+        [ "$result" = "$VG_SUCCESS" ] || return "$result"
+
     done < "$VG_EVENT_REGISTRY"
 
     return "$VG_SUCCESS"
