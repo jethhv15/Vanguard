@@ -1,8 +1,5 @@
 #!/system/bin/sh
 
-TEST_DIR="$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd)"
-CORE_DIR="$(CDPATH= cd -- "$TEST_DIR/../core" && pwd)"
-
 . "$CORE_DIR/sdk/sdk.sh"
 
 VG_CURRENT_MODULE_ID="example"
