@@ -22,11 +22,19 @@ vg_load_module() {
 
     module_path="$1"
 
+    [ -d "$module_path" ] || return "$VG_ERR_NOT_FOUND"
+
     manifest="$module_path/module.prop"
 
     vg_parse_manifest "$manifest" || return $?
 
     vg_validate_module || return $?
+
+    entry="$module_path/$VG_MODULE_ENTRY"
+
+    [ -f "$entry" ] || return "$VG_ERR_NOT_FOUND"
+
+    . "$entry" || return "$VG_ERR_INTERNAL"
 
     return "$VG_SUCCESS"
 }
