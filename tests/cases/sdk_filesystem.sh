@@ -9,4 +9,8 @@ vg_fs_exists "/" || exit 1
 vg_fs_is_dir "/" || exit 1
 vg_fs_is_file "/system/build.prop" || exit 1
 
+content="$(vg_fs_read "/system/build.prop")"
+
+[ -n "$content" ] || exit 1
+
 exit 0
