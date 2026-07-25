@@ -6,15 +6,27 @@
 
 vg_module_init() {
 
-    return 0
+    #
+    # Initialize module resources
+    #
+
+    return "$VG_SUCCESS"
 }
 
 vg_module_start() {
 
-    return 0
+    #
+    # Module logic starts here
+    #
+
+    return "$VG_SUCCESS"
 }
 
 vg_module_stop() {
 
-    return 0
+    #
+    # Cleanup before module unload
+    #
+
+    return "$VG_SUCCESS"
 }
