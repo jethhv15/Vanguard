@@ -23,14 +23,40 @@ vg_lifecycle_execute() {
     IFS='
 '
 
+    started_modules=""
+
     for entry in $VG_LOADED_MODULES
     do
         module_id="${entry%%|*}"
 
-        vg_dispatch_module "$module_id" "$action" || {
+        if ! vg_dispatch_module "$module_id" "$action"; then
+            result=$?
+
+            if [ "$action" = "start" ]; then
+                rollback_ifs="$IFS"
+                IFS='
+'
+
+                for started in $started_modules
+                do
+                    vg_dispatch_module "$started" stop >/dev/null 2>&1
+                done
+
+                IFS="$rollback_ifs"
+            fi
+
             IFS="$old_ifs"
-            return $?
-        }
+            return "$result"
+        fi
+
+        if [ "$action" = "start" ]; then
+            if [ -z "$started_modules" ]; then
+                started_modules="$module_id"
+            else
+                started_modules="${started_modules}
+${module_id}"
+            fi
+        fi
     done
 
     IFS="$old_ifs"
