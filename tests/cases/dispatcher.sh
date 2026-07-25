@@ -1,8 +1,5 @@
 #!/system/bin/sh
 
-TEST_DIR="$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd)"
-CORE_DIR="$(CDPATH= cd -- "$TEST_DIR/../core" && pwd)"
-
 . "$CORE_DIR/constants.sh"
 . "$CORE_DIR/context.sh"
 . "$CORE_DIR/parser.sh"
