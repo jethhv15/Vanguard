@@ -65,10 +65,8 @@ vg_emit_event() {
     do
         [ "$current" = "$event" ] || continue
 
-        command -v "$callback" >/dev/null 2>&1 || continue
-
-        "$callback"
-
+        vg_invoke_callback "$callback"
+        
     done < "$VG_EVENT_REGISTRY"
 
     return "$VG_SUCCESS"
