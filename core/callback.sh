@@ -8,10 +8,10 @@ vg_invoke_callback() {
 
     callback="$1"
 
-    [ -n "$callback" ] || return "$VG_ERROR_INVALID_ARGUMENT"
+    [ -n "$callback" ] || return "$VG_ERR_INVALID"
 
     command -v "$callback" >/dev/null 2>&1 || \
-        return "$VG_ERROR_NOT_FOUND"
+        return "$VG_ERR_NOT_FOUND"
 
     "$callback"
 
