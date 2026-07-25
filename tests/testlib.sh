@@ -32,7 +32,7 @@ vg_assert_equal() {
 }
 
 vg_assert_true() {
-    if "$1"; then
+    if eval "$1"; then
         vg_test_pass "$2"
     else
         vg_test_fail "$2"
@@ -40,7 +40,7 @@ vg_assert_true() {
 }
 
 vg_assert_false() {
-    if "$1"; then
+    if eval "$1"; then
         vg_test_fail "$2"
     else
         vg_test_pass "$2"
