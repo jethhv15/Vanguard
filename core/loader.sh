@@ -13,7 +13,6 @@ CORE_DIR="$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)"
 . "$CORE_DIR/constants.sh"
 . "$CORE_DIR/parser.sh"
 . "$CORE_DIR/module_validator.sh"
-. "$CORE_DIR/registry.sh"
 
 #
 # Public Functions
@@ -45,8 +44,6 @@ vg_load_module() {
 
     command -v vg_module_stop >/dev/null 2>&1 \
         || return "$VG_ERR_INVALID"
-
-    vg_registry_add "$module_path" || return $?
 
     return "$VG_SUCCESS"
 }
