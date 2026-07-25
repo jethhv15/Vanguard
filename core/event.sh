@@ -55,5 +55,21 @@ vg_unsubscribe_event() {
 }
 
 vg_emit_event() {
+
+    event="$1"
+
+    [ -n "$event" ] || return 1
+    [ -f "$VG_EVENT_REGISTRY" ] || return "$VG_SUCCESS"
+
+    while IFS='|' read -r current callback
+    do
+        [ "$current" = "$event" ] || continue
+
+        command -v "$callback" >/dev/null 2>&1 || continue
+
+        "$callback"
+
+    done < "$VG_EVENT_REGISTRY"
+
     return "$VG_SUCCESS"
 }
