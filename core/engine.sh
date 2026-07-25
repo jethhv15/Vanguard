@@ -10,6 +10,7 @@ CORE_DIR="$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)"
 . "$CORE_DIR/runtime.sh"
 . "$CORE_DIR/scanner.sh"
 . "$CORE_DIR/loader.sh"
+. "$CORE_DIR/parser.sh"
 . "$CORE_DIR/registry.sh"
 
 vg_engine_start() {
@@ -31,7 +32,14 @@ vg_engine_start() {
             return $?
         }
 
-        vg_registry_add "$module" || {
+        manifest="$module/module.prop"
+
+        vg_parse_manifest "$manifest" || {
+            IFS=$OLD_IFS
+            return $?
+        }
+
+        vg_registry_add "$VG_MODULE_ID" || {
             IFS=$OLD_IFS
             return $?
         }
