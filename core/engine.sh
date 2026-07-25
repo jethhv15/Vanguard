@@ -24,8 +24,14 @@ vg_engine_start() {
     IFS='
 '
 
-    for module in $VG_SCANNED_MODULES; do
+    for module in $VG_SCANNED_MODULES
+    do
         vg_load_module "$module" || {
+            IFS=$OLD_IFS
+            return $?
+        }
+
+        vg_registry_add "$module" || {
             IFS=$OLD_IFS
             return $?
         }
