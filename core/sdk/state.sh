@@ -11,7 +11,11 @@ vg_state_get() {
 
 vg_state_set() {
 
-    VG_CURRENT_MODULE_STATE="$1"
+    state="$1"
+
+    [ -n "$state" ] || return "$VG_ERROR_INVALID_ARGUMENT"
+
+    VG_CURRENT_MODULE_STATE="$state"
 
     return "$VG_SUCCESS"
 }
