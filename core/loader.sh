@@ -4,19 +4,11 @@
 # Module Loader
 #
 
-#
-# Load Dependencies
-#
-
 CORE_DIR="$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)"
 
 . "$CORE_DIR/constants.sh"
 . "$CORE_DIR/parser.sh"
 . "$CORE_DIR/module_validator.sh"
-
-#
-# Public Functions
-#
 
 vg_load_module() {
 
@@ -35,6 +27,15 @@ vg_load_module() {
     [ -f "$entry" ] || return "$VG_ERR_NOT_FOUND"
 
     . "$entry" || return "$VG_ERR_INTERNAL"
+
+    command -v vg_module_init >/dev/null 2>&1 \
+        || return "$VG_ERR_INVALID"
+
+    command -v vg_module_start >/dev/null 2>&1 \
+        || return "$VG_ERR_INVALID"
+
+    command -v vg_module_stop >/dev/null 2>&1 \
+        || return "$VG_ERR_INVALID"
 
     return "$VG_SUCCESS"
 }
