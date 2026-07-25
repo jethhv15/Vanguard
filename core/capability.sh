@@ -8,7 +8,11 @@
 # Load Dependencies
 #
 
-. "$(dirname "$0")/constants.sh"
+if [ -z "${CORE_DIR:-}" ]; then
+    CORE_DIR="$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)"
+fi
+
+. "$CORE_DIR/constants.sh"
 
 #
 # Global Variables
@@ -34,9 +38,9 @@ vg_detect_dynamic_partitions() {
 
 vg_detect_ab_slots() {
 
-    slot_suffix="$(getprop ro.boot.slot_suffix)"
+    slot_count="$(getprop ro.boot.slot_suffix)"
 
-    if [ -n "$slot_suffix" ]; then
+    if [ -n "$slot_count" ]; then
         VG_CAP_AB="true"
         return "$VG_SUCCESS"
     fi
