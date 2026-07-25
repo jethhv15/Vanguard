@@ -33,15 +33,15 @@ vg_registry_reset() {
 
 vg_registry_add() {
 
-    module="$1"
+    module_id="$1"
 
-    [ -n "$module" ] || return "$VG_ERR_INVALID"
+    [ -n "$module_id" ] || return "$VG_ERR_INVALID"
 
     if [ -z "$VG_LOADED_MODULES" ]; then
-        VG_LOADED_MODULES="$module"
+        VG_LOADED_MODULES="$module_id"
     else
         VG_LOADED_MODULES="${VG_LOADED_MODULES}
-$module"
+$module_id"
     fi
 
     VG_LOADED_MODULE_COUNT=$((VG_LOADED_MODULE_COUNT + 1))
