@@ -23,3 +23,7 @@ vg_module_author() {
 vg_module_description() {
     printf '%s\n' "$VG_CURRENT_MODULE_DESCRIPTION"
 }
+
+vg_module_api() {
+    printf '%s\n' "$VG_CURRENT_MODULE_API"
+}
