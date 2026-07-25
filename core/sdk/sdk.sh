@@ -21,6 +21,7 @@ SDK_DIR="$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)"
 #
 # Services
 #
+. "$SDK_DIR/module.sh"
 
 if [ -f "$SDK_DIR/logger.sh" ]; then
     . "$SDK_DIR/logger.sh"
