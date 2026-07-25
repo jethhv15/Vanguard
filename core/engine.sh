@@ -18,10 +18,20 @@ vg_engine_start() {
 
     vg_registry_reset || return $?
 
-    vg_scan_modules | while IFS= read -r module
-    do
-        vg_load_module "$module" || return $?
+    vg_scan_modules || return $?
+
+    OLD_IFS=$IFS
+    IFS='
+'
+
+    for module in $VG_SCANNED_MODULES; do
+        vg_load_module "$module" || {
+            IFS=$OLD_IFS
+            return $?
+        }
     done
+
+    IFS=$OLD_IFS
 
     return "$VG_SUCCESS"
 }
