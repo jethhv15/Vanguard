@@ -14,7 +14,14 @@ vg_register_hook() {
     [ -n "$hook" ] || return 1
     [ -n "$callback" ] || return 1
 
-    printf '%s|%s\n' "$hook" "$callback" >> "$VG_HOOK_REGISTRY"
+    [ -f "$VG_HOOK_REGISTRY" ] || : > "$VG_HOOK_REGISTRY"
+
+    printf '%s|%s\n' \
+        "$hook" \
+        "$callback" \
+        >> "$VG_HOOK_REGISTRY"
+
+    return "$VG_SUCCESS"
 }
 
 vg_dispatch_hook() {
@@ -29,6 +36,8 @@ vg_dispatch_hook() {
         [ "$current" = "$hook" ] || continue
 
         vg_invoke_callback "$callback"
-        
+
     done < "$VG_HOOK_REGISTRY"
+
+    return "$VG_SUCCESS"
 }
