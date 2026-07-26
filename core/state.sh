@@ -294,3 +294,107 @@ ${entry}"
 
     return "$VG_SUCCESS"
 }
+
+#
+# Multi module state helpers
+#
+
+vg_state_get_module()
+{
+
+    module_id="$1"
+
+    [ -n "$module_id" ] || return "$VG_ERR_INVALID"
+
+
+    old_ifs="$IFS"
+    IFS='
+'
+
+
+    for entry in $VG_MODULE_STATES
+    do
+
+        id="${entry%%|*}"
+        state="${entry##*|}"
+
+
+        if [ "$id" = "$module_id" ]; then
+
+            printf '%s\n' "$state"
+
+            IFS="$old_ifs"
+
+            return "$VG_SUCCESS"
+
+        fi
+
+    done
+
+
+    IFS="$old_ifs"
+
+    return "$VG_ERR_NOT_FOUND"
+}
+
+
+
+vg_state_remove_module()
+{
+
+    module_id="$1"
+
+
+    [ -n "$module_id" ] || return "$VG_ERR_INVALID"
+
+
+    new_states=""
+
+
+    old_ifs="$IFS"
+    IFS='
+'
+
+
+    for entry in $VG_MODULE_STATES
+    do
+
+        id="${entry%%|*}"
+
+
+        [ "$id" = "$module_id" ] && continue
+
+
+        if [ -z "$new_states" ]; then
+
+            new_states="$entry"
+
+        else
+
+            new_states="${new_states}
+${entry}"
+
+        fi
+
+    done
+
+
+    IFS="$old_ifs"
+
+
+    VG_MODULE_STATES="$new_states"
+
+
+    return "$VG_SUCCESS"
+}
+
+
+
+vg_state_reset_modules()
+{
+
+    VG_MODULE_STATES=""
+
+    return "$VG_SUCCESS"
+
+}
