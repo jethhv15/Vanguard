@@ -1,0 +1,8 @@
+id=test
+name=Parser Test
+version=1.0
+versionCode=1
+author=Test
+api=1
+entry=module.sh
+depends=network,performance
