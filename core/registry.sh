@@ -25,43 +25,52 @@ vg_registry_reset() {
 }
 
 
+
 vg_registry_add() {
 
-    module_id="$1"
-    module_path="$2"
-    module_dependencies="$3"
-
-    [ -n "$module_id" ] || return "$VG_ERR_INVALID"
-    [ -n "$module_path" ] || return "$VG_ERR_INVALID"
+    reg_module_id="$1"
+    reg_module_path="$2"
+    reg_dependencies="$3"
 
 
-    if vg_registry_get_path "$module_id" >/dev/null 2>&1; then
+    [ -n "$reg_module_id" ] || return "$VG_ERR_INVALID"
+    [ -n "$reg_module_path" ] || return "$VG_ERR_INVALID"
+
+
+    if vg_registry_get_path "$reg_module_id" >/dev/null 2>&1; then
         return "$VG_ERR_GENERAL"
     fi
 
 
-    entry="${module_id}|${module_path}|${module_dependencies}"
+    entry="${reg_module_id}|${reg_module_path}|${reg_dependencies}"
 
 
     if [ -z "$VG_LOADED_MODULES" ]; then
+
         VG_LOADED_MODULES="$entry"
+
     else
+
         VG_LOADED_MODULES="${VG_LOADED_MODULES}
 ${entry}"
+
     fi
 
 
     VG_LOADED_MODULE_COUNT=$((VG_LOADED_MODULE_COUNT + 1))
 
+
     return "$VG_SUCCESS"
 }
 
 
+
 vg_registry_get_path() {
 
-    module_id="$1"
+    reg_lookup_id="$1"
 
-    [ -n "$module_id" ] || return "$VG_ERR_INVALID"
+
+    [ -n "$reg_lookup_id" ] || return "$VG_ERR_INVALID"
 
 
     old_ifs="$IFS"
@@ -69,18 +78,18 @@ vg_registry_get_path() {
 '
 
 
-    for entry in $VG_LOADED_MODULES
+    for reg_entry in $VG_LOADED_MODULES
     do
 
-        id="$(printf '%s\n' "$entry" | cut -d'|' -f1)"
-        path="$(printf '%s\n' "$entry" | cut -d'|' -f2)"
+        reg_id="$(printf '%s\n' "$reg_entry" | cut -d'|' -f1)"
+        reg_path="$(printf '%s\n' "$reg_entry" | cut -d'|' -f2)"
 
 
-        if [ "$id" = "$module_id" ]; then
+        if [ "$reg_id" = "$reg_lookup_id" ]; then
 
             IFS="$old_ifs"
 
-            printf '%s\n' "$path"
+            printf '%s\n' "$reg_path"
 
             return "$VG_SUCCESS"
 
@@ -90,16 +99,19 @@ vg_registry_get_path() {
 
 
     IFS="$old_ifs"
+
 
     return "$VG_ERR_NOT_FOUND"
 }
 
 
+
 vg_registry_get_dependencies() {
 
-    module_id="$1"
+    reg_dependency_id="$1"
 
-    [ -n "$module_id" ] || return "$VG_ERR_INVALID"
+
+    [ -n "$reg_dependency_id" ] || return "$VG_ERR_INVALID"
 
 
     old_ifs="$IFS"
@@ -107,18 +119,17 @@ vg_registry_get_dependencies() {
 '
 
 
-    for entry in $VG_LOADED_MODULES
+    for reg_entry in $VG_LOADED_MODULES
     do
 
-        id="$(printf '%s\n' "$entry" | cut -d'|' -f1)"
-        dependencies="$(printf '%s\n' "$entry" | cut -d'|' -f3)"
+        reg_id="$(printf '%s\n' "$reg_entry" | cut -d'|' -f1)"
 
 
-        if [ "$id" = "$module_id" ]; then
+        if [ "$reg_id" = "$reg_dependency_id" ]; then
+
+            printf '%s\n' "$reg_entry" | cut -d'|' -f3
 
             IFS="$old_ifs"
-
-            printf '%s\n' "$dependencies"
 
             return "$VG_SUCCESS"
 
@@ -128,6 +139,7 @@ vg_registry_get_dependencies() {
 
 
     IFS="$old_ifs"
+
 
     return "$VG_ERR_NOT_FOUND"
 }
