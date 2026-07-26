@@ -40,7 +40,28 @@ vg_transaction_generate_id()
 
     VG_TRANSACTION_ID="$(date '+%Y%m%d%H%M%S')"
 
+
+    [ -n "$VG_TRANSACTION_ID" ] \
+        || return "$VG_ERR_INTERNAL"
+
+
     printf '%s\n' "$VG_TRANSACTION_ID"
+
+
+    return "$VG_SUCCESS"
+
+}
+
+
+
+vg_transaction_validate()
+{
+
+    [ -n "$VG_TRANSACTION_ID" ] \
+        || return "$VG_ERR_INVALID"
+
+
+    return "$VG_SUCCESS"
 
 }
 
@@ -53,17 +74,21 @@ vg_transaction_generate_id()
 vg_transaction_begin()
 {
 
-    if [ "$VG_TRANSACTION_STATE" = "running" ]; then
+    if [ "$VG_TRANSACTION_STATE" != "idle" ]; then
 
         return "$VG_ERR_GENERAL"
 
     fi
 
 
-    vg_transaction_generate_id >/dev/null
+
+    vg_transaction_generate_id >/dev/null \
+        || return $?
+
 
 
     vg_transaction_set_state "running"
+
 
 
     vg_audit_write \
@@ -72,6 +97,7 @@ vg_transaction_begin()
         "idle" \
         "running" \
         "$VG_SUCCESS"
+
 
 
     return "$VG_SUCCESS"
@@ -88,7 +114,13 @@ vg_transaction_commit()
 
 
 
+    vg_transaction_validate \
+        || return $?
+
+
+
     old_state="$VG_TRANSACTION_STATE"
+
 
 
     vg_transaction_set_state "committed"
@@ -118,7 +150,13 @@ vg_transaction_rollback()
 
 
 
+    vg_transaction_validate \
+        || return $?
+
+
+
     old_state="$VG_TRANSACTION_STATE"
+
 
 
     vg_transaction_set_state "rolledback"

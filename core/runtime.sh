@@ -12,74 +12,150 @@ if [ -z "${CORE_DIR:-}" ]; then
     CORE_DIR="$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)"
 fi
 
+
 . "$CORE_DIR/constants.sh"
 . "$CORE_DIR/discovery.sh"
 . "$CORE_DIR/validator.sh"
 
+
+
 #
-# Global Variables
+# Runtime State
 #
 
 VG_RUNTIME_INITIALIZED="false"
 VG_RUNTIME_DISCOVERED="false"
 VG_RUNTIME_VALIDATED="false"
 
+
+
 #
-# Public Functions
+# Initialize Runtime
 #
 
-vg_runtime_init() {
+vg_runtime_init()
+{
 
     VG_RUNTIME_INITIALIZED="true"
 
     return "$VG_SUCCESS"
+
 }
 
-vg_runtime_mark_discovered() {
+
+
+#
+# Mark Discovery Complete
+#
+
+vg_runtime_mark_discovered()
+{
 
     VG_RUNTIME_DISCOVERED="true"
 
     return "$VG_SUCCESS"
+
 }
 
-vg_runtime_mark_validated() {
+
+
+#
+# Mark Validation Complete
+#
+
+vg_runtime_mark_validated()
+{
 
     VG_RUNTIME_VALIDATED="true"
 
     return "$VG_SUCCESS"
+
 }
 
-vg_runtime_reset() {
+
+
+#
+# Reset Runtime
+#
+
+vg_runtime_reset()
+{
 
     VG_RUNTIME_INITIALIZED="false"
     VG_RUNTIME_DISCOVERED="false"
     VG_RUNTIME_VALIDATED="false"
 
     return "$VG_SUCCESS"
+
 }
 
-vg_runtime_is_initialized() {
+
+
+#
+# Runtime Status
+#
+
+vg_runtime_is_initialized()
+{
 
     [ "$VG_RUNTIME_INITIALIZED" = "true" ]
+
 }
 
-vg_runtime_boot() {
+
+
+#
+# Runtime Boot
+#
+
+vg_runtime_boot()
+{
 
     vg_runtime_reset
 
+
     vg_runtime_init || return $?
 
-    vg_discover || return $?
+
+
+    vg_discover
+
+    result=$?
+
+
+    if [ "$result" -ne "$VG_SUCCESS" ]; then
+
+        vg_runtime_reset
+
+        return "$result"
+
+    fi
+
+
 
     vg_runtime_mark_discovered
 
-    if ! vg_validate_environment; then
-        result=$?
+
+
+    vg_validate_environment
+
+    result=$?
+
+
+    if [ "$result" -ne "$VG_SUCCESS" ]; then
+
         vg_runtime_reset
+
         return "$result"
+
     fi
+
+
 
     vg_runtime_mark_validated
 
+
+
     return "$VG_SUCCESS"
+
 }

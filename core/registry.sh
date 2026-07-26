@@ -1,70 +1,35 @@
 #!/system/bin/sh
 #
 # Project Vanguard
-# Registry
+# Module Registry
 #
 
 if [ -z "${CORE_DIR:-}" ]; then
     CORE_DIR="$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)"
 fi
 
-
 . "$CORE_DIR/constants.sh"
-. "$CORE_DIR/audit.sh"
 
 
+#
+# Registry Storage
+#
 
-VG_LOADED_MODULES=""
-VG_LOADED_MODULE_COUNT=0
+VG_REGISTRY_MODULES="${VG_REGISTRY_MODULES:-}"
+VG_LOADED_MODULE_COUNT="${VG_LOADED_MODULE_COUNT:-0}"
 
 
 
 #
-# Internal Audit Helper
-#
-
-vg_registry_audit()
-{
-
-    event="$1"
-    module="$2"
-    data="$3"
-
-
-    command -v vg_audit_write >/dev/null 2>&1 || return "$VG_SUCCESS"
-
-
-    vg_audit_write \
-        "$event" \
-        "$module" \
-        "$data" \
-        "" \
-        "$VG_SUCCESS" \
-        >/dev/null 2>&1
-
-
-    return "$VG_SUCCESS"
-
-}
-
-
-
-#
-# Reset Registry
+# Reset
 #
 
 vg_registry_reset()
 {
 
-    VG_LOADED_MODULES=""
+    VG_REGISTRY_MODULES=""
+
     VG_LOADED_MODULE_COUNT=0
-
-
-    vg_registry_audit \
-        "REGISTRY_RESET" \
-        "-" \
-        "registry cleared"
-
 
     return "$VG_SUCCESS"
 
@@ -73,49 +38,59 @@ vg_registry_reset()
 
 
 #
-# Add Module
+# Add
 #
 
 vg_registry_add()
 {
 
-    vg_registry_add_id="$1"
-    vg_registry_add_path="$2"
-    vg_registry_add_deps="$3"
+    module_id="$1"
+    module_path="$2"
+    module_depends="$3"
 
 
-    [ -n "$vg_registry_add_id" ] || return "$VG_ERR_INVALID"
-    [ -n "$vg_registry_add_path" ] || return "$VG_ERR_INVALID"
-
-
-
-    if vg_registry_get_path "$vg_registry_add_id" >/dev/null 2>&1; then
-
-
-        vg_registry_audit \
-            "MODULE_DUPLICATE_REJECTED" \
-            "$vg_registry_add_id" \
-            "$vg_registry_add_path"
-
-
-        return "$VG_ERR_GENERAL"
-
-    fi
+    [ -n "$module_id" ] || return "$VG_ERR_INVALID"
+    [ -n "$module_path" ] || return "$VG_ERR_INVALID"
 
 
 
-    vg_registry_add_entry="${vg_registry_add_id}|${vg_registry_add_path}|${vg_registry_add_deps}"
+    old_ifs="$IFS"
+    IFS='
+'
+
+
+    for entry in $VG_REGISTRY_MODULES
+    do
+
+        id="${entry%%|*}"
+
+
+        if [ "$id" = "$module_id" ]; then
+
+            IFS="$old_ifs"
+
+            return "$VG_ERR_GENERAL"
+
+        fi
+
+    done
+
+
+    IFS="$old_ifs"
 
 
 
-    if [ -z "$VG_LOADED_MODULES" ]; then
+    record="${module_id}|${module_path}|${module_depends}"
 
-        VG_LOADED_MODULES="$vg_registry_add_entry"
+
+    if [ -z "$VG_REGISTRY_MODULES" ]; then
+
+        VG_REGISTRY_MODULES="$record"
 
     else
 
-        VG_LOADED_MODULES="${VG_LOADED_MODULES}
-${vg_registry_add_entry}"
+        VG_REGISTRY_MODULES="${VG_REGISTRY_MODULES}
+${record}"
 
     fi
 
@@ -124,14 +99,6 @@ ${vg_registry_add_entry}"
     VG_LOADED_MODULE_COUNT=$((VG_LOADED_MODULE_COUNT + 1))
 
 
-
-    vg_registry_audit \
-        "MODULE_REGISTERED" \
-        "$vg_registry_add_id" \
-        "$vg_registry_add_path"
-
-
-
     return "$VG_SUCCESS"
 
 }
@@ -139,48 +106,35 @@ ${vg_registry_add_entry}"
 
 
 #
-# Get Module Path
+# Get Path
 #
 
 vg_registry_get_path()
 {
 
-    vg_registry_path_id="$1"
+    module_id="$1"
 
 
-    [ -n "$vg_registry_path_id" ] || return "$VG_ERR_INVALID"
-
-
-
-    vg_registry_path_old_ifs="$IFS"
+    old_ifs="$IFS"
     IFS='
 '
 
 
-
-    for vg_registry_path_entry in $VG_LOADED_MODULES
+    for entry in $VG_REGISTRY_MODULES
     do
 
-        vg_registry_path_entry_id="$(printf '%s\n' "$vg_registry_path_entry" | cut -d'|' -f1)"
+        id="${entry%%|*}"
+
+        rest="${entry#*|}"
+
+        path="${rest%%|*}"
 
 
+        if [ "$id" = "$module_id" ]; then
 
-        if [ "$vg_registry_path_entry_id" = "$vg_registry_path_id" ]; then
+            printf '%s\n' "$path"
 
-
-            printf '%s\n' \
-                "$(printf '%s\n' "$vg_registry_path_entry" | cut -d'|' -f2)"
-
-
-
-            vg_registry_audit \
-                "MODULE_LOOKUP" \
-                "$vg_registry_path_id" \
-                "path resolved"
-
-
-
-            IFS="$vg_registry_path_old_ifs"
+            IFS="$old_ifs"
 
             return "$VG_SUCCESS"
 
@@ -189,16 +143,7 @@ vg_registry_get_path()
     done
 
 
-
-    IFS="$vg_registry_path_old_ifs"
-
-
-
-    vg_registry_audit \
-        "MODULE_NOT_FOUND" \
-        "$vg_registry_path_id" \
-        "lookup failed"
-
+    IFS="$old_ifs"
 
 
     return "$VG_ERR_NOT_FOUND"
@@ -214,35 +159,29 @@ vg_registry_get_path()
 vg_registry_get_dependencies()
 {
 
-    vg_registry_dep_id="$1"
+    module_id="$1"
 
 
-    [ -n "$vg_registry_dep_id" ] || return "$VG_ERR_INVALID"
-
-
-
-    vg_registry_dep_old_ifs="$IFS"
+    old_ifs="$IFS"
     IFS='
 '
 
 
-
-    for vg_registry_dep_entry in $VG_LOADED_MODULES
+    for entry in $VG_REGISTRY_MODULES
     do
 
-        vg_registry_dep_entry_id="$(printf '%s\n' "$vg_registry_dep_entry" | cut -d'|' -f1)"
+        id="${entry%%|*}"
+
+        rest="${entry#*|}"
+
+        depends="${rest#*|}"
 
 
+        if [ "$id" = "$module_id" ]; then
 
-        if [ "$vg_registry_dep_entry_id" = "$vg_registry_dep_id" ]; then
+            printf '%s\n' "$depends"
 
-
-            printf '%s\n' \
-                "$(printf '%s\n' "$vg_registry_dep_entry" | cut -d'|' -f3)"
-
-
-
-            IFS="$vg_registry_dep_old_ifs"
+            IFS="$old_ifs"
 
             return "$VG_SUCCESS"
 
@@ -251,8 +190,7 @@ vg_registry_get_dependencies()
     done
 
 
-
-    IFS="$vg_registry_dep_old_ifs"
+    IFS="$old_ifs"
 
 
     return "$VG_ERR_NOT_FOUND"
@@ -262,80 +200,88 @@ vg_registry_get_dependencies()
 
 
 #
-# Reorder Registry
+# List
+#
+
+vg_registry_list()
+{
+
+    old_ifs="$IFS"
+    IFS='
+'
+
+
+    for entry in $VG_REGISTRY_MODULES
+    do
+
+        printf '%s\n' "${entry%%|*}"
+
+    done
+
+
+    IFS="$old_ifs"
+
+    return "$VG_SUCCESS"
+
+}
+
+
+
+#
+# Reorder
 #
 
 vg_registry_reorder()
 {
 
-    vg_registry_plan="$1"
+    plan="$1"
+
+    [ -n "$plan" ] || return "$VG_ERR_INVALID"
 
 
-    [ -n "$vg_registry_plan" ] || return "$VG_ERR_INVALID"
+    reordered=""
 
 
-
-    vg_registry_old_modules="$VG_LOADED_MODULES"
-
-
-    VG_LOADED_MODULES=""
-    VG_LOADED_MODULE_COUNT=0
-
-
-
-    vg_registry_plan_old_ifs="$IFS"
+    old_ifs="$IFS"
     IFS='
 '
 
 
-
-    for vg_registry_plan_id in $vg_registry_plan
+    for module in $plan
     do
 
-
-        for vg_registry_old_entry in $vg_registry_old_modules
+        for entry in $VG_REGISTRY_MODULES
         do
 
-
-            vg_registry_old_id="$(printf '%s\n' "$vg_registry_old_entry" | cut -d'|' -f1)"
-
+            id="${entry%%|*}"
 
 
-            if [ "$vg_registry_old_id" = "$vg_registry_plan_id" ]; then
+            if [ "$id" = "$module" ]; then
 
 
-                vg_registry_old_path="$(printf '%s\n' "$vg_registry_old_entry" | cut -d'|' -f2)"
-                vg_registry_old_deps="$(printf '%s\n' "$vg_registry_old_entry" | cut -d'|' -f3)"
+                if [ -z "$reordered" ]; then
 
+                    reordered="$entry"
 
+                else
 
-                vg_registry_add \
-                    "$vg_registry_old_id" \
-                    "$vg_registry_old_path" \
-                    "$vg_registry_old_deps"
+                    reordered="${reordered}
+${entry}"
 
+                fi
 
-
-                break
 
             fi
 
         done
 
-
     done
 
 
-
-    IFS="$vg_registry_plan_old_ifs"
-
+    IFS="$old_ifs"
 
 
-    vg_registry_audit \
-        "REGISTRY_REORDER" \
-        "-" \
-        "startup order applied"
-
+    VG_REGISTRY_MODULES="$reordered"
 
 
     return "$VG_SUCCESS"

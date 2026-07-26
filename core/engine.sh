@@ -1,7 +1,7 @@
 #!/system/bin/sh
 #
 # Project Vanguard
-# Engine
+# Engine Core
 #
 
 if [ -z "${CORE_DIR:-}" ]; then
@@ -10,6 +10,7 @@ fi
 
 
 . "$CORE_DIR/constants.sh"
+. "$CORE_DIR/config.sh"
 . "$CORE_DIR/runtime.sh"
 . "$CORE_DIR/scanner.sh"
 . "$CORE_DIR/loader.sh"
@@ -18,121 +19,284 @@ fi
 . "$CORE_DIR/planner.sh"
 . "$CORE_DIR/lifecycle.sh"
 . "$CORE_DIR/executor.sh"
-. "$CORE_DIR/hooks.sh"
-. "$CORE_DIR/service.sh"
-. "$CORE_DIR/event.sh"
-. "$CORE_DIR/callback.sh"
+. "$CORE_DIR/audit.sh"
 
 
+
+#
+# Engine State
+#
+
+if [ -z "${VG_ENGINE_STATE:-}" ]; then
+    VG_ENGINE_STATE="$VG_ENGINE_IDLE"
+fi
+
+
+
+vg_engine_set_state()
+{
+
+    VG_ENGINE_STATE="$1"
+
+    return "$VG_SUCCESS"
+
+}
+
+
+
+vg_engine_status()
+{
+
+    printf '%s\n' "$VG_ENGINE_STATE"
+
+    return "$VG_SUCCESS"
+
+}
+
+
+
+#
+# Audit
+#
+
+vg_engine_audit()
+{
+
+    event="$1"
+    result="$2"
+
+
+    if command -v vg_audit_write >/dev/null 2>&1
+    then
+
+        vg_audit_write \
+            "$event" \
+            "engine" \
+            "" \
+            "$VG_ENGINE_STATE" \
+            "$result" \
+            >/dev/null 2>&1
+
+    fi
+
+
+    return "$VG_SUCCESS"
+
+}
+
+
+
+#
+# Start
+#
 
 vg_engine_start()
 {
 
-    vg_runtime_is_initialized || return "$VG_ERR_INTERNAL"
+
+    if [ "$VG_ENGINE_STATE" = "$VG_ENGINE_READY" ]
+    then
+
+        return "$VG_ERR_INVALID"
+
+    fi
 
 
 
-    #
-    # Reset registry
-    #
-
-    vg_registry_reset || return $?
+    vg_engine_set_state "$VG_ENGINE_BOOTING"
 
 
 
-    #
-    # Discover modules
-    #
+    vg_config_load >/dev/null 2>&1
+    rc=$?
 
-    vg_scan_modules || return $?
+    if [ "$rc" -ne "$VG_SUCCESS" ]; then
+
+        vg_engine_set_state "$VG_ENGINE_FAILED"
+
+        return "$rc"
+
+    fi
 
 
 
-    OLD_IFS=$IFS
+    vg_registry_reset
+    rc=$?
+
+    if [ "$rc" -ne "$VG_SUCCESS" ]; then
+
+        vg_engine_set_state "$VG_ENGINE_FAILED"
+
+        return "$rc"
+
+    fi
+
+
+
+    vg_scan_modules
+    rc=$?
+
+    if [ "$rc" -ne "$VG_SUCCESS" ]; then
+
+        vg_engine_set_state "$VG_ENGINE_FAILED"
+
+        return "$rc"
+
+    fi
+
+
+
+    OLD_IFS="$IFS"
     IFS='
 '
 
 
 
-    #
-    # Load module metadata
-    #
-
     for module in $VG_SCANNED_MODULES
     do
 
 
-        vg_load_module "$module" || {
+        vg_load_module "$module"
+        rc=$?
 
-            IFS=$OLD_IFS
-            return $?
+        if [ "$rc" -ne "$VG_SUCCESS" ]; then
 
-        }
+            IFS="$OLD_IFS"
+
+            vg_engine_set_state "$VG_ENGINE_FAILED"
+
+            return "$rc"
+
+        fi
 
 
 
-        manifest="$module/module.prop"
+        vg_parse_manifest "$module/module.prop"
+        rc=$?
 
+        if [ "$rc" -ne "$VG_SUCCESS" ]; then
 
+            IFS="$OLD_IFS"
 
-        vg_parse_manifest "$manifest" || {
+            vg_engine_set_state "$VG_ENGINE_FAILED"
 
-            IFS=$OLD_IFS
-            return $?
+            return "$rc"
 
-        }
-
+        fi
 
 
 
         vg_registry_add \
             "$VG_MODULE_ID" \
             "$module" \
-            "$VG_MODULE_DEPENDS" || {
+            "$VG_MODULE_DEPENDS"
+
+        rc=$?
 
 
-                IFS=$OLD_IFS
-                return $?
+        if [ "$rc" -ne "$VG_SUCCESS" ]; then
 
+            IFS="$OLD_IFS"
 
-            }
+            vg_engine_set_state "$VG_ENGINE_FAILED"
+
+            return "$rc"
+
+        fi
 
 
     done
 
 
 
-    IFS=$OLD_IFS
+    IFS="$OLD_IFS"
 
 
 
-    #
-    # Build dependency startup plan
-    #
+    vg_planner_build_all
+    rc=$?
 
-    vg_planner_build_all || return $?
+    if [ "$rc" -ne "$VG_SUCCESS" ]; then
+
+        vg_engine_set_state "$VG_ENGINE_FAILED"
+
+        return "$rc"
+
+    fi
 
 
-
-
-    #
-    # Apply resolved order
-    #
 
     vg_registry_reorder \
-        "$VG_STARTUP_PLAN" || return $?
+        "$VG_STARTUP_PLAN"
+
+    rc=$?
+
+    if [ "$rc" -ne "$VG_SUCCESS" ]; then
+
+        vg_engine_set_state "$VG_ENGINE_FAILED"
+
+        return "$rc"
+
+    fi
 
 
 
+    vg_executor_start
+    rc=$?
 
-    #
-    # Execute lifecycle
-    #
 
-    vg_executor_start || return $?
+    if [ "$rc" -ne "$VG_SUCCESS" ]; then
 
+        vg_engine_set_state "$VG_ENGINE_FAILED"
+
+        return "$rc"
+
+    fi
+
+
+
+    vg_engine_set_state "$VG_ENGINE_READY"
+
+
+
+    vg_engine_audit \
+        "ENGINE_READY" \
+        "$VG_SUCCESS"
 
 
 
     return "$VG_SUCCESS"
+
+}
+
+
+
+#
+# Stop
+#
+
+vg_engine_stop()
+{
+
+
+    vg_executor_stop
+    rc=$?
+
+
+    if [ "$rc" -ne "$VG_SUCCESS" ]; then
+
+        vg_engine_set_state "$VG_ENGINE_FAILED"
+
+        return "$rc"
+
+    fi
+
+
+
+    vg_engine_set_state "$VG_ENGINE_IDLE"
+
+
+
+    return "$VG_SUCCESS"
+
 }

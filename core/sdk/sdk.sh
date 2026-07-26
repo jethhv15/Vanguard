@@ -4,32 +4,9 @@
 # SDK Loader
 #
 
-#
-# Resolve SDK Directory
-#
-
-if [ -z "${SDK_DIR:-}" ]; then
-    SDK_DIR="$CORE_DIR/sdk"
+if [ -z "${CORE_DIR:-}" ]; then
+    CORE_DIR="$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd)"
 fi
 
-#
-# Framework APIs
-#
 
-. "$SDK_DIR/framework.sh"
-
-#
-# Module APIs
-#
-
-. "$SDK_DIR/module.sh"
-
-#
-# SDK Services
-#
-
-. "$SDK_DIR/logger.sh"
-. "$SDK_DIR/property.sh"
-. "$SDK_DIR/filesystem.sh"
-. "$SDK_DIR/hook.sh"
-. "$SDK_DIR/state.sh"
+. "$CORE_DIR/sdk/api.sh"

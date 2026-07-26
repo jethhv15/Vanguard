@@ -13,10 +13,6 @@ fi
 . "$CORE_DIR/state.sh"
 
 
-#
-# Internal
-#
-
 VG_LIFECYCLE_STARTED=""
 
 
@@ -37,6 +33,27 @@ ${module_id}"
 
     fi
 
+}
+
+
+
+vg_lifecycle_update_state()
+{
+
+    module="$1"
+    state="$2"
+
+
+    command -v vg_state_set >/dev/null 2>&1 || return "$VG_SUCCESS"
+
+
+    vg_state_set \
+        "$module" \
+        "$state" \
+        >/dev/null 2>&1
+
+
+    return "$VG_SUCCESS"
 
 }
 
@@ -50,35 +67,34 @@ vg_lifecycle_rollback()
 '
 
 
-    rollback_list=""
+    rollback=""
 
 
     for module in $VG_LIFECYCLE_STARTED
     do
 
-        if [ -z "$rollback_list" ]; then
-
-            rollback_list="$module"
-
-        else
-
-            rollback_list="${module}
-${rollback_list}"
-
-        fi
+        rollback="${module}
+${rollback}"
 
     done
 
 
 
-    for module in $rollback_list
+    for module in $rollback
     do
 
         [ -n "$module" ] || continue
 
+
         vg_dispatch_module \
             "$module" \
-            stop >/dev/null 2>&1
+            stop \
+            >/dev/null 2>&1
+
+
+        vg_lifecycle_update_state \
+            "$module" \
+            stopped
 
     done
 
@@ -98,7 +114,9 @@ vg_lifecycle_execute()
     [ -n "$action" ] || return "$VG_ERR_INVALID"
 
 
-    VG_LIFECYCLE_STARTED=""
+    if [ "$action" = "start" ]; then
+        VG_LIFECYCLE_STARTED=""
+    fi
 
 
     old_ifs="$IFS"
@@ -106,34 +124,22 @@ vg_lifecycle_execute()
 '
 
 
-    #
-    # Start order follows registry planner result
-    #
-
     if [ "$action" = "stop" ]; then
 
-        reverse_list=""
+
+        modules=""
+
 
         for entry in $VG_LOADED_MODULES
         do
 
             module_id="${entry%%|*}"
 
-            if [ -z "$reverse_list" ]; then
-
-                reverse_list="$module_id"
-
-            else
-
-                reverse_list="${module_id}
-${reverse_list}"
-
-            fi
+            modules="${module_id}
+${modules}"
 
         done
 
-
-        modules="$reverse_list"
 
     else
 
@@ -157,6 +163,7 @@ ${reverse_list}"
             "$module_id" \
             "$action"
 
+
         rc=$?
 
 
@@ -179,11 +186,39 @@ ${reverse_list}"
 
 
 
-        if [ "$action" = "start" ]; then
+        case "$action" in
 
-            vg_lifecycle_append_started "$module_id"
+            init)
 
-        fi
+                vg_lifecycle_update_state \
+                    "$module_id" \
+                    loaded
+
+                ;;
+
+
+            start)
+
+                vg_lifecycle_update_state \
+                    "$module_id" \
+                    started
+
+
+                vg_lifecycle_append_started \
+                    "$module_id"
+
+                ;;
+
+
+            stop)
+
+                vg_lifecycle_update_state \
+                    "$module_id" \
+                    stopped
+
+                ;;
+
+        esac
 
 
     done
@@ -199,31 +234,21 @@ ${reverse_list}"
 
 
 
-#
-# Public API
-#
-
 vg_lifecycle_init()
 {
-
     vg_lifecycle_execute init
-
 }
 
 
 
 vg_lifecycle_start()
 {
-
     vg_lifecycle_execute start
-
 }
 
 
 
 vg_lifecycle_stop()
 {
-
     vg_lifecycle_execute stop
-
 }

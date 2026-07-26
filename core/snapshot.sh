@@ -8,23 +8,15 @@ if [ -z "${CORE_DIR:-}" ]; then
     CORE_DIR="$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)"
 fi
 
+
 . "$CORE_DIR/constants.sh"
 . "$CORE_DIR/audit.sh"
 
 
+
 #
-# Snapshot Storage
+# Snapshot State
 #
-
-if [ -z "${VG_RUNTIME_DIR:-}" ]; then
-
-    VG_RUNTIME_DIR="$CORE_DIR/../runtime"
-
-fi
-
-
-VG_SNAPSHOT_DIR="$VG_RUNTIME_DIR/snapshot"
-
 
 VG_SNAPSHOT_STATE="empty"
 VG_SNAPSHOT_ID=""
@@ -37,7 +29,12 @@ VG_SNAPSHOT_ID=""
 vg_snapshot_prepare()
 {
 
-    [ -d "$VG_SNAPSHOT_DIR" ] || mkdir -p "$VG_SNAPSHOT_DIR"
+    [ -n "$VG_SNAPSHOT_DIR" ] \
+        || return "$VG_ERR_INVALID"
+
+
+    [ -d "$VG_SNAPSHOT_DIR" ] \
+        || mkdir -p "$VG_SNAPSHOT_DIR" 2>/dev/null
 
 
     [ -d "$VG_SNAPSHOT_DIR" ] \
@@ -50,21 +47,86 @@ vg_snapshot_prepare()
 
 
 
+#
+# Generate ID
+#
+
 vg_snapshot_generate_id()
 {
 
     VG_SNAPSHOT_ID="$(date '+%Y%m%d%H%M%S')"
 
 
+    [ -n "$VG_SNAPSHOT_ID" ] \
+        || return "$VG_ERR_INTERNAL"
+
+
     printf '%s\n' \
         "$VG_SNAPSHOT_ID"
+
+
+    return "$VG_SUCCESS"
 
 }
 
 
 
 #
-# Public API
+# Discover latest snapshot
+#
+
+vg_snapshot_discover()
+{
+
+    vg_snapshot_prepare || return $?
+
+
+    latest="$(ls -1 "$VG_SNAPSHOT_DIR"/*.snapshot 2>/dev/null | tail -n 1)"
+
+
+    [ -n "$latest" ] \
+        || return "$VG_ERR_NOT_FOUND"
+
+
+
+    VG_SNAPSHOT_ID="$(basename "$latest" .snapshot)"
+
+
+    return "$VG_SUCCESS"
+
+}
+
+
+
+#
+# Validate snapshot file
+#
+
+vg_snapshot_validate_file()
+{
+
+    file="$1"
+
+
+    [ -f "$file" ] \
+        || return "$VG_ERR_NOT_FOUND"
+
+
+    header="$(head -n 1 "$file" 2>/dev/null)"
+
+
+    [ "$header" = "VANGUARD_SNAPSHOT" ] \
+        || return "$VG_ERR_INVALID"
+
+
+    return "$VG_SUCCESS"
+
+}
+
+
+
+#
+# Create Snapshot
 #
 
 vg_snapshot_create()
@@ -73,10 +135,20 @@ vg_snapshot_create()
     vg_snapshot_prepare || return $?
 
 
-    vg_snapshot_generate_id >/dev/null
+    vg_snapshot_generate_id >/dev/null \
+        || return $?
+
 
 
     snapshot_file="$VG_SNAPSHOT_DIR/${VG_SNAPSHOT_ID}.snapshot"
+
+
+
+    if [ -f "$snapshot_file" ]; then
+
+        return "$VG_ERR_GENERAL"
+
+    fi
 
 
 
@@ -89,11 +161,13 @@ vg_snapshot_create()
 
 
 
-    if [ ! -f "$snapshot_file" ]; then
+    [ -f "$snapshot_file" ] \
+        || return "$VG_ERR_INTERNAL"
 
-        return "$VG_ERR_INTERNAL"
 
-    fi
+
+    vg_snapshot_validate_file "$snapshot_file" \
+        || return $?
 
 
 
@@ -116,16 +190,26 @@ vg_snapshot_create()
 
 
 
+#
+# Check Snapshot
+#
+
 vg_snapshot_exists()
 {
 
-    [ -n "$VG_SNAPSHOT_ID" ] \
-        || return "$VG_ERR_NOT_FOUND"
+    if [ -z "$VG_SNAPSHOT_ID" ]; then
+
+        vg_snapshot_discover || return $?
+
+    fi
 
 
 
-    [ -f "$VG_SNAPSHOT_DIR/${VG_SNAPSHOT_ID}.snapshot" ] \
-        || return "$VG_ERR_NOT_FOUND"
+    snapshot_file="$VG_SNAPSHOT_DIR/${VG_SNAPSHOT_ID}.snapshot"
+
+
+    vg_snapshot_validate_file "$snapshot_file" \
+        || return $?
 
 
 
@@ -134,6 +218,10 @@ vg_snapshot_exists()
 }
 
 
+
+#
+# Restore
+#
 
 vg_snapshot_restore()
 {
@@ -162,6 +250,10 @@ vg_snapshot_restore()
 
 
 
+#
+# Status
+#
+
 vg_snapshot_status()
 {
 
@@ -174,6 +266,10 @@ vg_snapshot_status()
 }
 
 
+
+#
+# Clear
+#
 
 vg_snapshot_clear()
 {

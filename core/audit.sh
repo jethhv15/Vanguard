@@ -33,8 +33,9 @@ fi
 VG_AUDIT_FILE="${VG_RUNTIME_DIR}/audit.log"
 
 
+
 #
-# Audit integrity state
+# Integrity state
 #
 
 VG_AUDIT_SEQUENCE=0
@@ -43,7 +44,7 @@ VG_AUDIT_LAST_HASH="0000000000000000"
 
 
 #
-# Prepare storage
+# Prepare
 #
 
 vg_audit_prepare()
@@ -52,14 +53,11 @@ vg_audit_prepare()
     [ -d "$VG_RUNTIME_DIR" ] || mkdir -p "$VG_RUNTIME_DIR" 2>/dev/null
 
 
-    if [ ! -f "$VG_AUDIT_FILE" ]; then
-
-        : > "$VG_AUDIT_FILE" 2>/dev/null
-
-    fi
+    [ -f "$VG_AUDIT_FILE" ] || : > "$VG_AUDIT_FILE"
 
 
-    [ -f "$VG_AUDIT_FILE" ] || return "$VG_ERR_INTERNAL"
+    [ -f "$VG_AUDIT_FILE" ] \
+        || return "$VG_ERR_INTERNAL"
 
 
     return "$VG_SUCCESS"
@@ -69,7 +67,35 @@ vg_audit_prepare()
 
 
 #
-# Generate hash
+# Sync chain state from existing log
+#
+
+vg_audit_sync_state()
+{
+
+    [ -f "$VG_AUDIT_FILE" ] || return "$VG_ERR_NOT_FOUND"
+
+
+    last="$(tail -n 1 "$VG_AUDIT_FILE" 2>/dev/null)"
+
+
+    if [ -n "$last" ]; then
+
+        VG_AUDIT_SEQUENCE="$(printf '%s\n' "$last" | cut -d'|' -f1)"
+
+        VG_AUDIT_LAST_HASH="$(printf '%s\n' "$last" | cut -d'|' -f9)"
+
+    fi
+
+
+    return "$VG_SUCCESS"
+
+}
+
+
+
+#
+# Hash
 #
 
 vg_audit_hash()
@@ -114,7 +140,7 @@ vg_audit_hash()
 
 
 #
-# Write audit event
+# Write
 #
 
 vg_audit_write()
@@ -127,16 +153,22 @@ vg_audit_write()
     result="$5"
 
 
-    [ -n "$event" ] || return "$VG_ERR_INVALID"
+    [ -n "$event" ] \
+        || return "$VG_ERR_INVALID"
 
 
 
-    vg_audit_prepare || return $?
+    vg_audit_prepare \
+        || return $?
+
+
+
+    vg_audit_sync_state \
+        >/dev/null 2>&1
 
 
 
     timestamp="$(date '+%Y-%m-%d %H:%M:%S')"
-
 
 
     VG_AUDIT_SEQUENCE=$((VG_AUDIT_SEQUENCE + 1))
@@ -146,19 +178,18 @@ vg_audit_write()
     record="${VG_AUDIT_SEQUENCE}|${timestamp}|${event}|${module}|${old_state}|${new_state}|${result}|${VG_AUDIT_LAST_HASH}"
 
 
-
-    current_hash="$(vg_audit_hash "$record")"
+    hash="$(vg_audit_hash "$record")"
 
 
 
     printf '%s|%s\n' \
         "$record" \
-        "$current_hash" \
+        "$hash" \
         >> "$VG_AUDIT_FILE"
 
 
 
-    VG_AUDIT_LAST_HASH="$current_hash"
+    VG_AUDIT_LAST_HASH="$hash"
 
 
 
@@ -169,7 +200,7 @@ vg_audit_write()
 
 
 #
-# Read all audit data
+# Read
 #
 
 vg_audit_read()
@@ -188,7 +219,7 @@ vg_audit_read()
 
 
 #
-# Filter audit event
+# Filter
 #
 
 vg_audit_filter()
@@ -197,10 +228,13 @@ vg_audit_filter()
     event="$1"
 
 
-    [ -n "$event" ] || return "$VG_ERR_INVALID"
+    [ -n "$event" ] \
+        || return "$VG_ERR_INVALID"
 
 
-    [ -f "$VG_AUDIT_FILE" ] || return "$VG_ERR_NOT_FOUND"
+
+    [ -f "$VG_AUDIT_FILE" ] \
+        || return "$VG_ERR_NOT_FOUND"
 
 
 
@@ -229,13 +263,14 @@ vg_audit_filter()
 
 
 #
-# Get latest audit entry
+# Last
 #
 
 vg_audit_last()
 {
 
-    [ -f "$VG_AUDIT_FILE" ] || return "$VG_ERR_NOT_FOUND"
+    [ -f "$VG_AUDIT_FILE" ] \
+        || return "$VG_ERR_NOT_FOUND"
 
 
     tail -n 1 "$VG_AUDIT_FILE"
@@ -248,13 +283,13 @@ vg_audit_last()
 
 
 #
-# Clear audit storage
+# Clear
 #
 
 vg_audit_clear()
 {
 
-    [ -f "$VG_AUDIT_FILE" ] || return "$VG_SUCCESS"
+    vg_audit_prepare || return $?
 
 
     : > "$VG_AUDIT_FILE"
@@ -271,13 +306,14 @@ vg_audit_clear()
 
 
 #
-# Verify audit integrity
+# Verify integrity
 #
 
 vg_audit_verify()
 {
 
-    [ -f "$VG_AUDIT_FILE" ] || return "$VG_ERR_NOT_FOUND"
+    [ -f "$VG_AUDIT_FILE" ] \
+        || return "$VG_ERR_NOT_FOUND"
 
 
 
@@ -303,18 +339,16 @@ vg_audit_verify()
         record="${seq}|${timestamp}|${event}|${module}|${old_state}|${new_state}|${result}|${prev_hash}"
 
 
-
-        calculated_hash="$(vg_audit_hash "$record")"
-
+        calculated="$(vg_audit_hash "$record")"
 
 
-        [ "$calculated_hash" = "$hash" ] \
+
+        [ "$calculated" = "$hash" ] \
             || return "$VG_ERR_INTERNAL"
 
 
 
         previous_hash="$hash"
-
 
         expected_sequence=$((expected_sequence + 1))
 

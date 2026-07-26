@@ -13,16 +13,10 @@ fi
 . "$CORE_DIR/audit.sh"
 
 
+
 #
 # Recovery storage
 #
-
-if [ -z "${VG_RECOVERY_DIR:-}" ]; then
-
-    VG_RECOVERY_DIR="$CORE_DIR/../runtime/recovery"
-
-fi
-
 
 VG_AUDIT_BACKUP="${VG_RECOVERY_DIR}/audit.snapshot"
 
@@ -35,10 +29,40 @@ VG_AUDIT_BACKUP="${VG_RECOVERY_DIR}/audit.snapshot"
 vg_recovery_prepare()
 {
 
-    [ -d "$VG_RECOVERY_DIR" ] || mkdir -p "$VG_RECOVERY_DIR" 2>/dev/null
+    [ -n "$VG_RECOVERY_DIR" ] \
+        || return "$VG_ERR_INVALID"
 
 
-    [ -d "$VG_RECOVERY_DIR" ] || return "$VG_ERR_INTERNAL"
+    [ -d "$VG_RECOVERY_DIR" ] \
+        || mkdir -p "$VG_RECOVERY_DIR" 2>/dev/null
+
+
+    [ -d "$VG_RECOVERY_DIR" ] \
+        || return "$VG_ERR_INTERNAL"
+
+
+    return "$VG_SUCCESS"
+
+}
+
+
+
+#
+# Validate backup
+#
+
+vg_recovery_validate_backup()
+{
+
+    file="$1"
+
+
+    [ -f "$file" ] \
+        || return "$VG_ERR_NOT_FOUND"
+
+
+    [ -s "$file" ] \
+        || return "$VG_ERR_INVALID"
 
 
     return "$VG_SUCCESS"
@@ -57,7 +81,13 @@ vg_recovery_snapshot()
     vg_recovery_prepare || return $?
 
 
-    [ -f "$VG_AUDIT_FILE" ] || return "$VG_ERR_NOT_FOUND"
+    [ -f "$VG_AUDIT_FILE" ] \
+        || return "$VG_ERR_NOT_FOUND"
+
+
+
+    [ -s "$VG_AUDIT_FILE" ] \
+        || return "$VG_ERR_INVALID"
 
 
 
@@ -66,8 +96,17 @@ vg_recovery_snapshot()
         "$VG_AUDIT_BACKUP"
 
 
-    [ -f "$VG_AUDIT_BACKUP" ] \
+    rc=$?
+
+
+    [ "$rc" -eq "$VG_SUCCESS" ] \
         || return "$VG_ERR_INTERNAL"
+
+
+
+    vg_recovery_validate_backup "$VG_AUDIT_BACKUP" \
+        || return $?
+
 
 
     return "$VG_SUCCESS"
@@ -86,19 +125,59 @@ vg_recovery_restore()
     vg_recovery_prepare || return $?
 
 
-    [ -f "$VG_AUDIT_BACKUP" ] \
-        || return "$VG_ERR_NOT_FOUND"
+    vg_recovery_validate_backup "$VG_AUDIT_BACKUP" \
+        || return $?
+
+
+
+    temp_file="${VG_AUDIT_FILE}.restore"
 
 
 
     cp \
         "$VG_AUDIT_BACKUP" \
+        "$temp_file"
+
+
+    rc=$?
+
+
+    if [ "$rc" -ne "$VG_SUCCESS" ]; then
+
+        rm -f "$temp_file" 2>/dev/null
+
+        return "$VG_ERR_INTERNAL"
+
+    fi
+
+
+
+    [ -s "$temp_file" ] \
+        || {
+
+            rm -f "$temp_file" 2>/dev/null
+
+            return "$VG_ERR_INVALID"
+
+        }
+
+
+
+    mv \
+        "$temp_file" \
         "$VG_AUDIT_FILE"
 
 
+    rc=$?
 
-    [ -f "$VG_AUDIT_FILE" ] \
-        || return "$VG_ERR_INTERNAL"
+
+    if [ "$rc" -ne "$VG_SUCCESS" ]; then
+
+        rm -f "$temp_file" 2>/dev/null
+
+        return "$VG_ERR_INTERNAL"
+
+    fi
 
 
 
