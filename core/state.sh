@@ -9,6 +9,7 @@ if [ -z "${CORE_DIR:-}" ]; then
 fi
 
 . "$CORE_DIR/constants.sh"
+. "$CORE_DIR/audit.sh"
 
 
 #
@@ -62,6 +63,37 @@ vg_state_can_transition() {
 
 
 
+#
+# Audit helper
+#
+
+vg_state_audit()
+{
+
+    module="$1"
+    old_state="$2"
+    new_state="$3"
+    result="$4"
+
+
+    command -v vg_audit_write >/dev/null 2>&1 || return "$VG_SUCCESS"
+
+
+    vg_audit_write \
+        "STATE_CHANGE" \
+        "$module" \
+        "$old_state" \
+        "$new_state" \
+        "$result" \
+        >/dev/null 2>&1
+
+
+    return "$VG_SUCCESS"
+
+}
+
+
+
 vg_state_find_module() {
 
     target="$1"
@@ -101,9 +133,6 @@ vg_state_find_module() {
 
 vg_state_get() {
 
-    #
-    # Legacy mode
-    #
 
     if [ "$#" -eq 0 ]; then
 
@@ -114,9 +143,6 @@ vg_state_get() {
     fi
 
 
-    #
-    # Module mode
-    #
 
     module="$1"
 
@@ -153,7 +179,8 @@ vg_state_get() {
 
 
 
-vg_state_set() {
+vg_state_set()
+{
 
 
     #
@@ -206,6 +233,7 @@ vg_state_set() {
     [ -n "$new_state" ] || return "$VG_ERR_INVALID"
 
 
+
     old_state=""
 
 
@@ -240,6 +268,14 @@ vg_state_set() {
         VG_MODULE_STATES="${VG_MODULE_STATES:+$VG_MODULE_STATES
 }${module}|${new_state}"
 
+
+        vg_state_audit \
+            "$module" \
+            "" \
+            "$new_state" \
+            "$VG_SUCCESS"
+
+
         return "$VG_SUCCESS"
 
     fi
@@ -251,7 +287,17 @@ vg_state_set() {
         "$new_state"
 
 
-    [ "$?" -eq 0 ] || return "$VG_ERR_INVALID"
+    [ "$?" -eq 0 ] || {
+
+        vg_state_audit \
+            "$module" \
+            "$old_state" \
+            "$new_state" \
+            "$VG_ERR_INVALID"
+
+        return "$VG_ERR_INVALID"
+
+    }
 
 
 
@@ -277,10 +323,14 @@ vg_state_set() {
 
 
         if [ -z "$new_list" ]; then
+
             new_list="$entry"
+
         else
+
             new_list="${new_list}
 ${entry}"
+
         fi
 
     done
@@ -292,8 +342,20 @@ ${entry}"
     VG_MODULE_STATES="$new_list"
 
 
+
+    vg_state_audit \
+        "$module" \
+        "$old_state" \
+        "$new_state" \
+        "$VG_SUCCESS"
+
+
+
     return "$VG_SUCCESS"
+
 }
+
+
 
 #
 # Multi module state helpers
@@ -335,6 +397,7 @@ vg_state_get_module()
     IFS="$old_ifs"
 
     return "$VG_ERR_NOT_FOUND"
+
 }
 
 
@@ -386,6 +449,7 @@ ${entry}"
 
 
     return "$VG_SUCCESS"
+
 }
 
 
@@ -394,6 +458,7 @@ vg_state_reset_modules()
 {
 
     VG_MODULE_STATES=""
+
 
     return "$VG_SUCCESS"
 
