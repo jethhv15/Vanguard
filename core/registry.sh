@@ -11,6 +11,7 @@
 VG_LOADED_MODULES=""
 VG_LOADED_MODULE_COUNT=0
 
+
 #
 # Public API
 #
@@ -28,15 +29,19 @@ vg_registry_add() {
 
     module_id="$1"
     module_path="$2"
+    module_dependencies="$3"
 
     [ -n "$module_id" ] || return "$VG_ERR_INVALID"
     [ -n "$module_path" ] || return "$VG_ERR_INVALID"
+
 
     if vg_registry_get_path "$module_id" >/dev/null 2>&1; then
         return "$VG_ERR_GENERAL"
     fi
 
-    entry="${module_id}|${module_path}"
+
+    entry="${module_id}|${module_path}|${module_dependencies}"
+
 
     if [ -z "$VG_LOADED_MODULES" ]; then
         VG_LOADED_MODULES="$entry"
@@ -44,6 +49,7 @@ vg_registry_add() {
         VG_LOADED_MODULES="${VG_LOADED_MODULES}
 ${entry}"
     fi
+
 
     VG_LOADED_MODULE_COUNT=$((VG_LOADED_MODULE_COUNT + 1))
 
@@ -57,21 +63,69 @@ vg_registry_get_path() {
 
     [ -n "$module_id" ] || return "$VG_ERR_INVALID"
 
+
     old_ifs="$IFS"
     IFS='
 '
 
+
     for entry in $VG_LOADED_MODULES
     do
+
         id="$(printf '%s\n' "$entry" | cut -d'|' -f1)"
-        path="$(printf '%s\n' "$entry" | cut -d'|' -f2-)"
+        path="$(printf '%s\n' "$entry" | cut -d'|' -f2)"
+
 
         if [ "$id" = "$module_id" ]; then
+
             IFS="$old_ifs"
+
             printf '%s\n' "$path"
+
             return "$VG_SUCCESS"
+
         fi
+
     done
+
+
+    IFS="$old_ifs"
+
+    return "$VG_ERR_NOT_FOUND"
+}
+
+
+vg_registry_get_dependencies() {
+
+    module_id="$1"
+
+    [ -n "$module_id" ] || return "$VG_ERR_INVALID"
+
+
+    old_ifs="$IFS"
+    IFS='
+'
+
+
+    for entry in $VG_LOADED_MODULES
+    do
+
+        id="$(printf '%s\n' "$entry" | cut -d'|' -f1)"
+        dependencies="$(printf '%s\n' "$entry" | cut -d'|' -f3)"
+
+
+        if [ "$id" = "$module_id" ]; then
+
+            IFS="$old_ifs"
+
+            printf '%s\n' "$dependencies"
+
+            return "$VG_SUCCESS"
+
+        fi
+
+    done
+
 
     IFS="$old_ifs"
 
