@@ -11,6 +11,7 @@ fi
 . "$CORE_DIR/constants.sh"
 
 
+
 #
 # Audit storage
 #
@@ -104,7 +105,7 @@ vg_audit_write()
 
 
 #
-# Read audit
+# Read all audit data
 #
 
 vg_audit_read()
@@ -114,6 +115,85 @@ vg_audit_read()
 
 
     cat "$VG_AUDIT_FILE"
+
+
+    return "$VG_SUCCESS"
+
+}
+
+
+
+#
+# Filter audit event
+#
+
+vg_audit_filter()
+{
+
+    event="$1"
+
+
+    [ -n "$event" ] || return "$VG_ERR_INVALID"
+
+
+    [ -f "$VG_AUDIT_FILE" ] || return "$VG_ERR_NOT_FOUND"
+
+
+
+    while IFS= read -r line
+    do
+
+        case "$line" in
+
+            *"|${event}|"*)
+
+                printf '%s\n' "$line"
+
+                ;;
+
+        esac
+
+
+    done < "$VG_AUDIT_FILE"
+
+
+
+    return "$VG_SUCCESS"
+
+}
+
+
+
+#
+# Get latest audit entry
+#
+
+vg_audit_last()
+{
+
+    [ -f "$VG_AUDIT_FILE" ] || return "$VG_ERR_NOT_FOUND"
+
+
+    tail -n 1 "$VG_AUDIT_FILE"
+
+
+    return "$VG_SUCCESS"
+
+}
+
+
+
+#
+# Clear audit storage
+#
+
+vg_audit_clear()
+{
+
+    [ -f "$VG_AUDIT_FILE" ] || return "$VG_SUCCESS"
+
+
+    : > "$VG_AUDIT_FILE"
 
 
     return "$VG_SUCCESS"
