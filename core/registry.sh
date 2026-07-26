@@ -4,6 +4,13 @@
 # Registry
 #
 
+if [ -z "${CORE_DIR:-}" ]; then
+    CORE_DIR="$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)"
+fi
+
+. "$CORE_DIR/constants.sh"
+
+
 #
 # Runtime Storage
 #
@@ -69,7 +76,6 @@ vg_registry_get_path() {
 
     reg_lookup_id="$1"
 
-
     [ -n "$reg_lookup_id" ] || return "$VG_ERR_INVALID"
 
 
@@ -92,14 +98,12 @@ vg_registry_get_path() {
             printf '%s\n' "$reg_path"
 
             return "$VG_SUCCESS"
-
         fi
 
     done
 
 
     IFS="$old_ifs"
-
 
     return "$VG_ERR_NOT_FOUND"
 }
@@ -109,7 +113,6 @@ vg_registry_get_path() {
 vg_registry_get_dependencies() {
 
     reg_dependency_id="$1"
-
 
     [ -n "$reg_dependency_id" ] || return "$VG_ERR_INVALID"
 
@@ -132,7 +135,6 @@ vg_registry_get_dependencies() {
             IFS="$old_ifs"
 
             return "$VG_SUCCESS"
-
         fi
 
     done
@@ -140,6 +142,76 @@ vg_registry_get_dependencies() {
 
     IFS="$old_ifs"
 
-
     return "$VG_ERR_NOT_FOUND"
+}
+
+
+
+#
+# Rebuild registry based on startup plan
+#
+
+vg_registry_reorder() {
+
+    plan="$1"
+
+    [ -n "$plan" ] || return "$VG_ERR_INVALID"
+
+
+    old_registry="$VG_LOADED_MODULES"
+
+
+    VG_LOADED_MODULES=""
+    VG_LOADED_MODULE_COUNT=0
+
+
+    old_ifs="$IFS"
+    IFS='
+'
+
+
+    for module_id in $plan
+    do
+
+        found="false"
+
+
+        for entry in $old_registry
+        do
+
+            entry_id="$(printf '%s\n' "$entry" | cut -d'|' -f1)"
+
+
+            if [ "$entry_id" = "$module_id" ]; then
+
+                path="$(printf '%s\n' "$entry" | cut -d'|' -f2)"
+                deps="$(printf '%s\n' "$entry" | cut -d'|' -f3)"
+
+
+                vg_registry_add \
+                    "$module_id" \
+                    "$path" \
+                    "$deps"
+
+
+                found="true"
+
+                break
+            fi
+
+        done
+
+
+        [ "$found" = "true" ] || {
+            IFS="$old_ifs"
+            return "$VG_ERR_NOT_FOUND"
+        }
+
+    done
+
+
+    IFS="$old_ifs"
+
+
+    return "$VG_SUCCESS"
 }
