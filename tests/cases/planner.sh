@@ -1,4 +1,8 @@
 #!/system/bin/sh
+#
+# Project Vanguard
+# Planner Tests
+#
 
 . "$TEST_DIR/testlib.sh"
 . "$CORE_DIR/constants.sh"
@@ -28,16 +32,18 @@ vg_registry_add \
 
 
 
+#
+# Single module resolve
+#
+
 vg_planner_build gaming
 
 rc=$?
-
 
 vg_assert_return_code \
     "$VG_SUCCESS" \
     "$rc" \
     "Planner should build startup plan"
-
 
 
 vg_assert_equal \
@@ -46,3 +52,26 @@ performance
 gaming" \
     "$VG_STARTUP_PLAN" \
     "Planner should preserve dependency startup order"
+
+
+
+#
+# Full registry resolve
+#
+
+vg_planner_build_all
+
+rc=$?
+
+vg_assert_return_code \
+    "$VG_SUCCESS" \
+    "$rc" \
+    "Planner should build all module startup plan"
+
+
+vg_assert_equal \
+    "thermal
+performance
+gaming" \
+    "$VG_STARTUP_PLAN" \
+    "Planner should preserve global startup order"
