@@ -10,94 +10,219 @@ fi
 
 . "$CORE_DIR/constants.sh"
 . "$CORE_DIR/dispatcher.sh"
+. "$CORE_DIR/state.sh"
+
 
 #
 # Internal
 #
 
-vg_lifecycle_execute() {
+VG_LIFECYCLE_STARTED=""
 
-    action="$1"
 
-    [ -n "$action" ] || return "$VG_ERR_INVALID"
+vg_lifecycle_append_started()
+{
+
+    module_id="$1"
+
+
+    if [ -z "$VG_LIFECYCLE_STARTED" ]; then
+
+        VG_LIFECYCLE_STARTED="$module_id"
+
+    else
+
+        VG_LIFECYCLE_STARTED="${VG_LIFECYCLE_STARTED}
+${module_id}"
+
+    fi
+
+
+}
+
+
+
+vg_lifecycle_rollback()
+{
 
     old_ifs="$IFS"
     IFS='
 '
 
-    started_modules=""
 
-    for entry in $VG_LOADED_MODULES
+    rollback_list=""
+
+
+    for module in $VG_LIFECYCLE_STARTED
     do
-        module_id="${entry%%|*}"
 
-        [ -n "$module_id" ] || continue
+        if [ -z "$rollback_list" ]; then
 
-        vg_dispatch_module "$module_id" "$action"
-        rc=$?
+            rollback_list="$module"
 
-        if [ "$rc" -ne "$VG_SUCCESS" ]; then
+        else
 
-            lifecycle_error="$rc"
-
-            if [ "$action" = "start" ]; then
-
-                rollback_ifs="$IFS"
-                IFS='
-'
-
-                for started in $started_modules
-                do
-                    vg_dispatch_module "$started" stop >/dev/null 2>&1
-                done
-
-                IFS="$rollback_ifs"
-
-            fi
-
-            IFS="$old_ifs"
-
-            return "$lifecycle_error"
-        fi
-
-
-        if [ "$action" = "start" ]; then
-
-            if [ -z "$started_modules" ]; then
-                started_modules="$module_id"
-            else
-                started_modules="${started_modules}
-${module_id}"
-            fi
+            rollback_list="${module}
+${rollback_list}"
 
         fi
 
     done
 
+
+
+    for module in $rollback_list
+    do
+
+        [ -n "$module" ] || continue
+
+        vg_dispatch_module \
+            "$module" \
+            stop >/dev/null 2>&1
+
+    done
+
+
     IFS="$old_ifs"
 
-    return "$VG_SUCCESS"
 }
+
+
+
+vg_lifecycle_execute()
+{
+
+    action="$1"
+
+
+    [ -n "$action" ] || return "$VG_ERR_INVALID"
+
+
+    VG_LIFECYCLE_STARTED=""
+
+
+    old_ifs="$IFS"
+    IFS='
+'
+
+
+    #
+    # Start order follows registry planner result
+    #
+
+    if [ "$action" = "stop" ]; then
+
+        reverse_list=""
+
+        for entry in $VG_LOADED_MODULES
+        do
+
+            module_id="${entry%%|*}"
+
+            if [ -z "$reverse_list" ]; then
+
+                reverse_list="$module_id"
+
+            else
+
+                reverse_list="${module_id}
+${reverse_list}"
+
+            fi
+
+        done
+
+
+        modules="$reverse_list"
+
+    else
+
+        modules="$VG_LOADED_MODULES"
+
+    fi
+
+
+
+    for entry in $modules
+    do
+
+        module_id="${entry%%|*}"
+
+
+        [ -n "$module_id" ] || continue
+
+
+
+        vg_dispatch_module \
+            "$module_id" \
+            "$action"
+
+        rc=$?
+
+
+
+        if [ "$rc" -ne "$VG_SUCCESS" ]; then
+
+
+            if [ "$action" = "start" ]; then
+
+                vg_lifecycle_rollback
+
+            fi
+
+
+            IFS="$old_ifs"
+
+            return "$rc"
+
+        fi
+
+
+
+        if [ "$action" = "start" ]; then
+
+            vg_lifecycle_append_started "$module_id"
+
+        fi
+
+
+    done
+
+
+
+    IFS="$old_ifs"
+
+
+    return "$VG_SUCCESS"
+
+}
+
+
 
 #
 # Public API
 #
 
-vg_lifecycle_init() {
+vg_lifecycle_init()
+{
 
     vg_lifecycle_execute init
 
 }
 
 
-vg_lifecycle_start() {
+
+vg_lifecycle_start()
+{
 
     vg_lifecycle_execute start
 
 }
 
 
-vg_lifecycle_stop() {
+
+vg_lifecycle_stop()
+{
 
     vg_lifecycle_execute stop
 
