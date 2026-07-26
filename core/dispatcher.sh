@@ -8,19 +8,54 @@ if [ -z "${CORE_DIR:-}" ]; then
     CORE_DIR="$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)"
 fi
 
+
 . "$CORE_DIR/constants.sh"
 . "$CORE_DIR/parser.sh"
 . "$CORE_DIR/context.sh"
 . "$CORE_DIR/registry.sh"
 . "$CORE_DIR/state.sh"
 . "$CORE_DIR/callback.sh"
+. "$CORE_DIR/audit.sh"
+
+
+
+#
+# Internal
+#
+
+vg_dispatch_audit()
+{
+
+    event="$1"
+    module="$2"
+    action="$3"
+    result="$4"
+
+
+    command -v vg_audit_write >/dev/null 2>&1 || return "$VG_SUCCESS"
+
+
+    vg_audit_write \
+        "$event" \
+        "$module" \
+        "$action" \
+        "" \
+        "$result" \
+        >/dev/null 2>&1
+
+
+    return "$VG_SUCCESS"
+
+}
+
 
 
 #
 # Public API
 #
 
-vg_dispatch_module() {
+vg_dispatch_module()
+{
 
     module_id="$1"
     action="$2"
@@ -55,6 +90,18 @@ vg_dispatch_module() {
 
 
     #
+    # Audit dispatch request
+    #
+
+    vg_dispatch_audit \
+        "MODULE_DISPATCH" \
+        "$module_id" \
+        "$action" \
+        "$VG_SUCCESS"
+
+
+
+    #
     # State validation
     #
 
@@ -67,8 +114,18 @@ vg_dispatch_module() {
         init)
 
             if [ -n "$current_state" ]; then
+
+                vg_dispatch_audit \
+                    "DISPATCH_REJECTED" \
+                    "$module_id" \
+                    "$action" \
+                    "$VG_ERR_INVALID"
+
+
                 vg_context_clear
+
                 return "$VG_ERR_INVALID"
+
             fi
 
             ;;
@@ -77,11 +134,20 @@ vg_dispatch_module() {
 
         start)
 
-            [ "$current_state" = "loaded" ] \
-                || {
-                    vg_context_clear
-                    return "$VG_ERR_INVALID"
-                }
+            if [ "$current_state" != "loaded" ]; then
+
+                vg_dispatch_audit \
+                    "DISPATCH_REJECTED" \
+                    "$module_id" \
+                    "$action" \
+                    "$VG_ERR_INVALID"
+
+
+                vg_context_clear
+
+                return "$VG_ERR_INVALID"
+
+            fi
 
             ;;
 
@@ -89,11 +155,20 @@ vg_dispatch_module() {
 
         stop)
 
-            [ "$current_state" = "started" ] \
-                || {
-                    vg_context_clear
-                    return "$VG_ERR_INVALID"
-                }
+            if [ "$current_state" != "started" ]; then
+
+                vg_dispatch_audit \
+                    "DISPATCH_REJECTED" \
+                    "$module_id" \
+                    "$action" \
+                    "$VG_ERR_INVALID"
+
+
+                vg_context_clear
+
+                return "$VG_ERR_INVALID"
+
+            fi
 
             ;;
 
@@ -101,7 +176,15 @@ vg_dispatch_module() {
 
         *)
 
+            vg_dispatch_audit \
+                "DISPATCH_REJECTED" \
+                "$module_id" \
+                "$action" \
+                "$VG_ERR_INVALID"
+
+
             vg_context_clear
+
             return "$VG_ERR_INVALID"
 
             ;;
@@ -122,6 +205,15 @@ vg_dispatch_module() {
 
     if [ "$result" -ne "$VG_SUCCESS" ]; then
 
+
+        vg_dispatch_audit \
+            "CALLBACK_FAILED" \
+            "$module_id" \
+            "$action" \
+            "$result"
+
+
+
         vg_context_clear
 
         return "$result"
@@ -140,7 +232,7 @@ vg_dispatch_module() {
 
             vg_state_set \
                 "$module_id" \
-                "loaded"
+                "$VG_MODULE_STATE_LOADED"
 
             ;;
 
@@ -149,7 +241,7 @@ vg_dispatch_module() {
 
             vg_state_set \
                 "$module_id" \
-                "started"
+                "$VG_MODULE_STATE_STARTED"
 
             ;;
 
@@ -158,7 +250,7 @@ vg_dispatch_module() {
 
             vg_state_set \
                 "$module_id" \
-                "stopped"
+                "$VG_MODULE_STATE_STOPPED"
 
             ;;
 
@@ -170,9 +262,35 @@ vg_dispatch_module() {
 
 
 
+    if [ "$result" -ne "$VG_SUCCESS" ]; then
+
+        vg_dispatch_audit \
+            "STATE_UPDATE_FAILED" \
+            "$module_id" \
+            "$action" \
+            "$result"
+
+
+        vg_context_clear
+
+        return "$result"
+
+    fi
+
+
+
+    vg_dispatch_audit \
+        "CALLBACK_SUCCESS" \
+        "$module_id" \
+        "$action" \
+        "$VG_SUCCESS"
+
+
+
     vg_context_clear
 
 
 
-    return "$result"
+    return "$VG_SUCCESS"
+
 }
