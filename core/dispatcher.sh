@@ -15,6 +15,7 @@ fi
 . "$CORE_DIR/state.sh"
 . "$CORE_DIR/callback.sh"
 
+
 #
 # Public API
 #
@@ -24,34 +25,105 @@ vg_dispatch_module() {
     module_id="$1"
     action="$2"
 
+
     [ -n "$module_id" ] || return "$VG_ERR_INVALID"
     [ -n "$action" ] || return "$VG_ERR_INVALID"
 
-    module_path="$(vg_registry_get_path "$module_id")" || return $?
+
+    module_path="$(vg_registry_get_path "$module_id")" \
+        || return $?
+
 
     manifest="$module_path/module.prop"
 
-    vg_parse_manifest "$manifest" || return $?
 
-    vg_context_set "$module_path" || return $?
+    vg_parse_manifest "$manifest" \
+        || return $?
 
-    vg_state_set "$VG_MODULE_STATE_LOADED"
+
+    vg_context_set "$module_path" \
+        || return $?
+
 
     callback="vg_${VG_MODULE_ID}_${action}"
 
-    vg_state_set "$VG_MODULE_STATE_STARTED"
+
+    case "$action" in
+
+        init)
+
+            vg_state_set "$VG_MODULE_STATE_LOADED" \
+                || {
+                    vg_context_clear
+                    return $?
+                }
+
+            ;;
+
+
+        start)
+
+            [ "$VG_CURRENT_MODULE_STATE" = "$VG_MODULE_STATE_LOADED" ] \
+                || {
+                    vg_context_clear
+                    return "$VG_ERR_INVALID"
+                }
+
+            ;;
+
+
+        stop)
+
+            [ "$VG_CURRENT_MODULE_STATE" = "$VG_MODULE_STATE_STARTED" ] \
+                || {
+                    vg_context_clear
+                    return "$VG_ERR_INVALID"
+                }
+
+            ;;
+
+
+        *)
+
+            vg_context_clear
+            return "$VG_ERR_INVALID"
+
+            ;;
+
+    esac
+
 
     vg_invoke_callback "$callback"
     result=$?
 
-    if [ "$result" = "$VG_ERR_NOT_FOUND" ]; then
+
+    if [ "$result" -ne "$VG_SUCCESS" ]; then
+
         vg_context_clear
-        return "$VG_ERR_INVALID"
+        return "$result"
+
     fi
 
-    vg_state_set "$VG_MODULE_STATE_STOPPED"
+
+    case "$action" in
+
+        init)
+            vg_state_set "$VG_MODULE_STATE_LOADED"
+            ;;
+
+        start)
+            vg_state_set "$VG_MODULE_STATE_STARTED"
+            ;;
+
+        stop)
+            vg_state_set "$VG_MODULE_STATE_STOPPED"
+            ;;
+
+    esac
+
 
     vg_context_clear
 
-    return "$result"
+
+    return "$VG_SUCCESS"
 }
