@@ -11,85 +11,86 @@ fi
 . "$CORE_DIR/constants.sh"
 . "$CORE_DIR/registry.sh"
 
+
 VG_RESOLVE_ORDER=""
 
-vg_resolver_contains() {
 
-    target="$1"
+vg_resolver_append() {
 
-    old_ifs="$IFS"
-    IFS='
-'
+    append_id="$1"
 
-    for item in $VG_RESOLVE_ORDER
-    do
-        if [ "$item" = "$target" ]; then
-            IFS="$old_ifs"
+
+    case "
+$VG_RESOLVE_ORDER
+" in
+        *"
+$append_id
+"*)
             return "$VG_SUCCESS"
-        fi
-    done
+            ;;
+    esac
 
-    IFS="$old_ifs"
 
-    return "$VG_ERR_NOT_FOUND"
-}
-
-vg_dependency_resolve_internal() {
-
-    vg_resolver_contains "$1"
-
-    if [ "$?" -eq "$VG_SUCCESS" ]; then
-        return "$VG_SUCCESS"
+    if [ -z "$VG_RESOLVE_ORDER" ]; then
+        VG_RESOLVE_ORDER="$append_id"
+    else
+        VG_RESOLVE_ORDER="${VG_RESOLVE_ORDER}
+$append_id"
     fi
 
-    deps="$(vg_registry_get_dependencies "$1")"
-
-    if [ -n "$deps" ]; then
-
-        old_ifs="$IFS"
-        IFS=','
-
-        for dep in $deps
-        do
-            [ -n "$dep" ] || continue
-
-            vg_dependency_resolve_internal "$dep"
-            rc=$?
-
-            if [ "$rc" -ne "$VG_SUCCESS" ]; then
-                IFS="$old_ifs"
-                return "$rc"
-            fi
-        done
-
-        IFS="$old_ifs"
-    fi
-
-    vg_resolver_contains "$1"
-
-    if [ "$?" -ne "$VG_SUCCESS" ]; then
-
-        if [ -z "$VG_RESOLVE_ORDER" ]; then
-            VG_RESOLVE_ORDER="$1"
-        else
-            VG_RESOLVE_ORDER="${VG_RESOLVE_ORDER}
-$1"
-        fi
-
-    fi
 
     return "$VG_SUCCESS"
 }
 
+
+
+vg_resolver_walk() {
+
+    walk_id="$1"
+
+
+    walk_deps="$(vg_registry_get_dependencies "$walk_id")"
+
+
+    if [ -n "$walk_deps" ]; then
+
+        old_ifs="$IFS"
+        IFS=','
+
+
+        for dep_id in $walk_deps
+        do
+            [ -n "$dep_id" ] || continue
+
+            vg_resolver_walk "$dep_id"
+
+        done
+
+
+        IFS="$old_ifs"
+
+    fi
+
+
+    vg_resolver_append "$1"
+
+}
+
+
+
 vg_dependency_resolve() {
 
-    root="$1"
+    root_id="$1"
 
-    [ -n "$root" ] || return "$VG_ERR_INVALID"
+
+    [ -n "$root_id" ] || return "$VG_ERR_INVALID"
+
 
     VG_RESOLVE_ORDER=""
 
-    vg_dependency_resolve_internal "$root"
 
-    return $?
+    vg_resolver_walk "$root_id"
+
+
+    return "$VG_SUCCESS"
 }

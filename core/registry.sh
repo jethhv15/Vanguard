@@ -11,17 +11,9 @@ fi
 . "$CORE_DIR/constants.sh"
 
 
-#
-# Runtime Storage
-#
-
 VG_LOADED_MODULES=""
 VG_LOADED_MODULE_COUNT=0
 
-
-#
-# Public API
-#
 
 vg_registry_reset() {
 
@@ -35,31 +27,31 @@ vg_registry_reset() {
 
 vg_registry_add() {
 
-    reg_module_id="$1"
-    reg_module_path="$2"
-    reg_dependencies="$3"
+    vg_registry_add_id="$1"
+    vg_registry_add_path="$2"
+    vg_registry_add_deps="$3"
 
 
-    [ -n "$reg_module_id" ] || return "$VG_ERR_INVALID"
-    [ -n "$reg_module_path" ] || return "$VG_ERR_INVALID"
+    [ -n "$vg_registry_add_id" ] || return "$VG_ERR_INVALID"
+    [ -n "$vg_registry_add_path" ] || return "$VG_ERR_INVALID"
 
 
-    if vg_registry_get_path "$reg_module_id" >/dev/null 2>&1; then
+    if vg_registry_get_path "$vg_registry_add_id" >/dev/null 2>&1; then
         return "$VG_ERR_GENERAL"
     fi
 
 
-    entry="${reg_module_id}|${reg_module_path}|${reg_dependencies}"
+    vg_registry_add_entry="${vg_registry_add_id}|${vg_registry_add_path}|${vg_registry_add_deps}"
 
 
     if [ -z "$VG_LOADED_MODULES" ]; then
 
-        VG_LOADED_MODULES="$entry"
+        VG_LOADED_MODULES="$vg_registry_add_entry"
 
     else
 
         VG_LOADED_MODULES="${VG_LOADED_MODULES}
-${entry}"
+${vg_registry_add_entry}"
 
     fi
 
@@ -74,36 +66,39 @@ ${entry}"
 
 vg_registry_get_path() {
 
-    reg_lookup_id="$1"
-
-    [ -n "$reg_lookup_id" ] || return "$VG_ERR_INVALID"
+    vg_registry_path_id="$1"
 
 
-    old_ifs="$IFS"
+    [ -n "$vg_registry_path_id" ] || return "$VG_ERR_INVALID"
+
+
+    vg_registry_path_old_ifs="$IFS"
     IFS='
 '
 
 
-    for reg_entry in $VG_LOADED_MODULES
+    for vg_registry_path_entry in $VG_LOADED_MODULES
     do
 
-        reg_id="$(printf '%s\n' "$reg_entry" | cut -d'|' -f1)"
-        reg_path="$(printf '%s\n' "$reg_entry" | cut -d'|' -f2)"
+        vg_registry_path_entry_id="$(printf '%s\n' "$vg_registry_path_entry" | cut -d'|' -f1)"
 
 
-        if [ "$reg_id" = "$reg_lookup_id" ]; then
+        if [ "$vg_registry_path_entry_id" = "$vg_registry_path_id" ]; then
 
-            IFS="$old_ifs"
+            printf '%s\n' \
+                "$(printf '%s\n' "$vg_registry_path_entry" | cut -d'|' -f2)"
 
-            printf '%s\n' "$reg_path"
+
+            IFS="$vg_registry_path_old_ifs"
 
             return "$VG_SUCCESS"
+
         fi
 
     done
 
 
-    IFS="$old_ifs"
+    IFS="$vg_registry_path_old_ifs"
 
     return "$VG_ERR_NOT_FOUND"
 }
@@ -112,105 +107,100 @@ vg_registry_get_path() {
 
 vg_registry_get_dependencies() {
 
-    reg_dependency_id="$1"
-
-    [ -n "$reg_dependency_id" ] || return "$VG_ERR_INVALID"
+    vg_registry_dep_id="$1"
 
 
-    old_ifs="$IFS"
+    [ -n "$vg_registry_dep_id" ] || return "$VG_ERR_INVALID"
+
+
+    vg_registry_dep_old_ifs="$IFS"
     IFS='
 '
 
 
-    for reg_entry in $VG_LOADED_MODULES
+    for vg_registry_dep_entry in $VG_LOADED_MODULES
     do
 
-        reg_id="$(printf '%s\n' "$reg_entry" | cut -d'|' -f1)"
+        vg_registry_dep_entry_id="$(printf '%s\n' "$vg_registry_dep_entry" | cut -d'|' -f1)"
 
 
-        if [ "$reg_id" = "$reg_dependency_id" ]; then
+        if [ "$vg_registry_dep_entry_id" = "$vg_registry_dep_id" ]; then
 
-            printf '%s\n' "$reg_entry" | cut -d'|' -f3
+            printf '%s\n' \
+                "$(printf '%s\n' "$vg_registry_dep_entry" | cut -d'|' -f3)"
 
-            IFS="$old_ifs"
+
+            IFS="$vg_registry_dep_old_ifs"
 
             return "$VG_SUCCESS"
+
         fi
 
     done
 
 
-    IFS="$old_ifs"
+    IFS="$vg_registry_dep_old_ifs"
 
     return "$VG_ERR_NOT_FOUND"
 }
 
 
 
-#
-# Rebuild registry based on startup plan
-#
-
 vg_registry_reorder() {
 
-    plan="$1"
-
-    [ -n "$plan" ] || return "$VG_ERR_INVALID"
+    vg_registry_plan="$1"
 
 
-    old_registry="$VG_LOADED_MODULES"
+    [ -n "$vg_registry_plan" ] || return "$VG_ERR_INVALID"
+
+
+    vg_registry_old_modules="$VG_LOADED_MODULES"
 
 
     VG_LOADED_MODULES=""
     VG_LOADED_MODULE_COUNT=0
 
 
-    old_ifs="$IFS"
+    vg_registry_plan_old_ifs="$IFS"
     IFS='
 '
 
 
-    for module_id in $plan
+    for vg_registry_plan_id in $vg_registry_plan
     do
 
-        found="false"
 
-
-        for entry in $old_registry
+        for vg_registry_old_entry in $vg_registry_old_modules
         do
 
-            entry_id="$(printf '%s\n' "$entry" | cut -d'|' -f1)"
+
+            vg_registry_old_id="$(printf '%s\n' "$vg_registry_old_entry" | cut -d'|' -f1)"
 
 
-            if [ "$entry_id" = "$module_id" ]; then
+            if [ "$vg_registry_old_id" = "$vg_registry_plan_id" ]; then
 
-                path="$(printf '%s\n' "$entry" | cut -d'|' -f2)"
-                deps="$(printf '%s\n' "$entry" | cut -d'|' -f3)"
+
+                vg_registry_old_path="$(printf '%s\n' "$vg_registry_old_entry" | cut -d'|' -f2)"
+                vg_registry_old_deps="$(printf '%s\n' "$vg_registry_old_entry" | cut -d'|' -f3)"
 
 
                 vg_registry_add \
-                    "$module_id" \
-                    "$path" \
-                    "$deps"
+                    "$vg_registry_old_id" \
+                    "$vg_registry_old_path" \
+                    "$vg_registry_old_deps"
 
-
-                found="true"
 
                 break
+
             fi
 
         done
 
 
-        [ "$found" = "true" ] || {
-            IFS="$old_ifs"
-            return "$VG_ERR_NOT_FOUND"
-        }
-
     done
 
 
-    IFS="$old_ifs"
+    IFS="$vg_registry_plan_old_ifs"
 
 
     return "$VG_SUCCESS"
