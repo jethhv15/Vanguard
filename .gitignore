@@ -1,1 +1,15 @@
+#
+# Project Vanguard
+#
 
+#
+# Runtime data
+#
+
+runtime/
+
+#
+# Logs
+#
+
+*.log
