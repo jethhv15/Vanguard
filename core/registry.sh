@@ -8,24 +8,76 @@ if [ -z "${CORE_DIR:-}" ]; then
     CORE_DIR="$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)"
 fi
 
+
 . "$CORE_DIR/constants.sh"
+. "$CORE_DIR/audit.sh"
+
 
 
 VG_LOADED_MODULES=""
 VG_LOADED_MODULE_COUNT=0
 
 
-vg_registry_reset() {
 
-    VG_LOADED_MODULES=""
-    VG_LOADED_MODULE_COUNT=0
+#
+# Internal Audit Helper
+#
+
+vg_registry_audit()
+{
+
+    event="$1"
+    module="$2"
+    data="$3"
+
+
+    command -v vg_audit_write >/dev/null 2>&1 || return "$VG_SUCCESS"
+
+
+    vg_audit_write \
+        "$event" \
+        "$module" \
+        "$data" \
+        "" \
+        "$VG_SUCCESS" \
+        >/dev/null 2>&1
+
 
     return "$VG_SUCCESS"
+
 }
 
 
 
-vg_registry_add() {
+#
+# Reset Registry
+#
+
+vg_registry_reset()
+{
+
+    VG_LOADED_MODULES=""
+    VG_LOADED_MODULE_COUNT=0
+
+
+    vg_registry_audit \
+        "REGISTRY_RESET" \
+        "-" \
+        "registry cleared"
+
+
+    return "$VG_SUCCESS"
+
+}
+
+
+
+#
+# Add Module
+#
+
+vg_registry_add()
+{
 
     vg_registry_add_id="$1"
     vg_registry_add_path="$2"
@@ -36,12 +88,24 @@ vg_registry_add() {
     [ -n "$vg_registry_add_path" ] || return "$VG_ERR_INVALID"
 
 
+
     if vg_registry_get_path "$vg_registry_add_id" >/dev/null 2>&1; then
+
+
+        vg_registry_audit \
+            "MODULE_DUPLICATE_REJECTED" \
+            "$vg_registry_add_id" \
+            "$vg_registry_add_path"
+
+
         return "$VG_ERR_GENERAL"
+
     fi
 
 
+
     vg_registry_add_entry="${vg_registry_add_id}|${vg_registry_add_path}|${vg_registry_add_deps}"
+
 
 
     if [ -z "$VG_LOADED_MODULES" ]; then
@@ -56,15 +120,30 @@ ${vg_registry_add_entry}"
     fi
 
 
+
     VG_LOADED_MODULE_COUNT=$((VG_LOADED_MODULE_COUNT + 1))
 
 
+
+    vg_registry_audit \
+        "MODULE_REGISTERED" \
+        "$vg_registry_add_id" \
+        "$vg_registry_add_path"
+
+
+
     return "$VG_SUCCESS"
+
 }
 
 
 
-vg_registry_get_path() {
+#
+# Get Module Path
+#
+
+vg_registry_get_path()
+{
 
     vg_registry_path_id="$1"
 
@@ -72,9 +151,11 @@ vg_registry_get_path() {
     [ -n "$vg_registry_path_id" ] || return "$VG_ERR_INVALID"
 
 
+
     vg_registry_path_old_ifs="$IFS"
     IFS='
 '
+
 
 
     for vg_registry_path_entry in $VG_LOADED_MODULES
@@ -83,10 +164,20 @@ vg_registry_get_path() {
         vg_registry_path_entry_id="$(printf '%s\n' "$vg_registry_path_entry" | cut -d'|' -f1)"
 
 
+
         if [ "$vg_registry_path_entry_id" = "$vg_registry_path_id" ]; then
+
 
             printf '%s\n' \
                 "$(printf '%s\n' "$vg_registry_path_entry" | cut -d'|' -f2)"
+
+
+
+            vg_registry_audit \
+                "MODULE_LOOKUP" \
+                "$vg_registry_path_id" \
+                "path resolved"
+
 
 
             IFS="$vg_registry_path_old_ifs"
@@ -98,14 +189,30 @@ vg_registry_get_path() {
     done
 
 
+
     IFS="$vg_registry_path_old_ifs"
 
+
+
+    vg_registry_audit \
+        "MODULE_NOT_FOUND" \
+        "$vg_registry_path_id" \
+        "lookup failed"
+
+
+
     return "$VG_ERR_NOT_FOUND"
+
 }
 
 
 
-vg_registry_get_dependencies() {
+#
+# Get Dependencies
+#
+
+vg_registry_get_dependencies()
+{
 
     vg_registry_dep_id="$1"
 
@@ -113,9 +220,11 @@ vg_registry_get_dependencies() {
     [ -n "$vg_registry_dep_id" ] || return "$VG_ERR_INVALID"
 
 
+
     vg_registry_dep_old_ifs="$IFS"
     IFS='
 '
+
 
 
     for vg_registry_dep_entry in $VG_LOADED_MODULES
@@ -124,10 +233,13 @@ vg_registry_get_dependencies() {
         vg_registry_dep_entry_id="$(printf '%s\n' "$vg_registry_dep_entry" | cut -d'|' -f1)"
 
 
+
         if [ "$vg_registry_dep_entry_id" = "$vg_registry_dep_id" ]; then
+
 
             printf '%s\n' \
                 "$(printf '%s\n' "$vg_registry_dep_entry" | cut -d'|' -f3)"
+
 
 
             IFS="$vg_registry_dep_old_ifs"
@@ -139,19 +251,28 @@ vg_registry_get_dependencies() {
     done
 
 
+
     IFS="$vg_registry_dep_old_ifs"
 
+
     return "$VG_ERR_NOT_FOUND"
+
 }
 
 
 
-vg_registry_reorder() {
+#
+# Reorder Registry
+#
+
+vg_registry_reorder()
+{
 
     vg_registry_plan="$1"
 
 
     [ -n "$vg_registry_plan" ] || return "$VG_ERR_INVALID"
+
 
 
     vg_registry_old_modules="$VG_LOADED_MODULES"
@@ -161,9 +282,11 @@ vg_registry_reorder() {
     VG_LOADED_MODULE_COUNT=0
 
 
+
     vg_registry_plan_old_ifs="$IFS"
     IFS='
 '
+
 
 
     for vg_registry_plan_id in $vg_registry_plan
@@ -177,6 +300,7 @@ vg_registry_reorder() {
             vg_registry_old_id="$(printf '%s\n' "$vg_registry_old_entry" | cut -d'|' -f1)"
 
 
+
             if [ "$vg_registry_old_id" = "$vg_registry_plan_id" ]; then
 
 
@@ -184,10 +308,12 @@ vg_registry_reorder() {
                 vg_registry_old_deps="$(printf '%s\n' "$vg_registry_old_entry" | cut -d'|' -f3)"
 
 
+
                 vg_registry_add \
                     "$vg_registry_old_id" \
                     "$vg_registry_old_path" \
                     "$vg_registry_old_deps"
+
 
 
                 break
@@ -200,8 +326,18 @@ vg_registry_reorder() {
     done
 
 
+
     IFS="$vg_registry_plan_old_ifs"
 
 
+
+    vg_registry_audit \
+        "REGISTRY_REORDER" \
+        "-" \
+        "startup order applied"
+
+
+
     return "$VG_SUCCESS"
+
 }
