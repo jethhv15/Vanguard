@@ -12,6 +12,7 @@
 . "$CORE_DIR/recovery_feedback_loop.sh"
 . "$CORE_DIR/recovery_telemetry.sh"
 . "$CORE_DIR/recovery_analytics_engine.sh"
+. "$CORE_DIR/recovery_optimization_engine.sh"
 . "$CORE_DIR/recovery_pipeline_runtime.sh"
 
 
@@ -113,6 +114,34 @@ vg_assert_equal \
     "RESTORE" \
     "$VG_ANALYTICS_BEST_ACTION" \
     "Analytics should detect best action"
+
+
+
+vg_assert_equal \
+    "RESTORE" \
+    "$VG_OPT_ACTION" \
+    "Optimizer should keep best action"
+
+
+
+vg_assert_equal \
+    "HIGH" \
+    "$VG_OPT_SCORE" \
+    "Optimizer score should be HIGH"
+
+
+
+vg_assert_equal \
+    "95" \
+    "$VG_OPT_CONFIDENCE" \
+    "Optimizer confidence should be 95"
+
+
+
+vg_assert_equal \
+    "high historical success" \
+    "$VG_OPT_REASON" \
+    "Optimizer should explain recommendation"
 
 
 

@@ -14,6 +14,7 @@ fi
 . "$CORE_DIR/recovery_feedback_loop.sh"
 . "$CORE_DIR/recovery_telemetry.sh"
 . "$CORE_DIR/recovery_analytics_engine.sh"
+. "$CORE_DIR/recovery_optimization_engine.sh"
 
 
 
@@ -68,6 +69,17 @@ vg_runtime_execute_stage()
 
             vg_recovery_analytics_run \
                 "$VG_TELEMETRY_FILE" \
+                || return $?
+            ;;
+
+        OPTIMIZATION)
+
+            vg_recovery_optimize \
+                "$VG_ANALYTICS_BEST_ACTION" \
+                "$VG_ANALYTICS_RATE" \
+                || return $?
+
+            vg_recovery_optimizer_recommend \
                 || return $?
             ;;
 
