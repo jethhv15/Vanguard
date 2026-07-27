@@ -10,23 +10,26 @@ fi
 
 
 . "$CORE_DIR/constants.sh"
+. "$CORE_DIR/lifecycle.sh"
 . "$CORE_DIR/dispatcher.sh"
 . "$CORE_DIR/audit.sh"
+. "$CORE_DIR/recovery_transaction.sh"
+
 
 
 #
-# Recovery Execution State
+# Recovery Executor State
 #
 
 VG_RECOVERY_EXECUTION_STATUS="idle"
-VG_RECOVERY_EXECUTION_RESULT="$VG_SUCCESS"
+
 
 
 #
 # Internal
 #
 
-vg_recovery_executor_set()
+vg_recovery_executor_set_status()
 {
 
     VG_RECOVERY_EXECUTION_STATUS="$1"
@@ -69,61 +72,35 @@ vg_recovery_executor_audit()
 vg_recovery_retry_module()
 {
 
-    module_id="$1"
+    module="$1"
 
 
-    [ -n "$module_id" ] || return "$VG_ERR_INVALID"
-
-
-
-    vg_recovery_executor_set \
-        "running"
-
-
-
-    vg_recovery_executor_audit \
-        "RECOVERY_RETRY_START" \
-        "$VG_SUCCESS"
+    [ -n "$module" ] || return "$VG_ERR_INVALID"
 
 
 
     #
-    # Stop current module
+    # Stop module
     #
 
     vg_dispatch_module \
-        "$module_id" \
+        "$module" \
         stop
-
 
     rc=$?
 
 
 
     #
-    # Stop failure is ignored if module
-    # was already failed
+    # Stop failure is tolerated
+    # because module may already be stopped
     #
 
     if [ "$rc" -ne "$VG_SUCCESS" ]; then
 
-        current_state="$(vg_state_get_module "$module_id" 2>/dev/null)"
-
-
-        if [ "$current_state" != "$VG_MODULE_STATE_STOPPED" ]; then
-
-            vg_recovery_executor_audit \
-                "RECOVERY_RETRY_STOP_FAILED" \
-                "$rc"
-
-
-            vg_recovery_executor_set \
-                "failed"
-
-
-            return "$rc"
-
-        fi
+        vg_recovery_executor_audit \
+            "RECOVERY_STOP_SKIP" \
+            "$rc"
 
     fi
 
@@ -134,25 +111,13 @@ vg_recovery_retry_module()
     #
 
     vg_dispatch_module \
-        "$module_id" \
+        "$module" \
         init
-
 
     rc=$?
 
 
-
     if [ "$rc" -ne "$VG_SUCCESS" ]; then
-
-
-        vg_recovery_executor_audit \
-            "RECOVERY_RETRY_INIT_FAILED" \
-            "$rc"
-
-
-        vg_recovery_executor_set \
-            "failed"
-
 
         return "$rc"
 
@@ -165,51 +130,20 @@ vg_recovery_retry_module()
     #
 
     vg_dispatch_module \
-        "$module_id" \
+        "$module" \
         start
-
 
     rc=$?
 
 
-
-    if [ "$rc" -ne "$VG_SUCCESS" ]; then
-
-
-        vg_recovery_executor_audit \
-            "RECOVERY_RETRY_START_FAILED" \
-            "$rc"
-
-
-        vg_recovery_executor_set \
-            "failed"
-
-
-        return "$rc"
-
-    fi
-
-
-
-    vg_recovery_executor_set \
-        "completed"
-
-
-
-    vg_recovery_executor_audit \
-        "RECOVERY_RETRY_SUCCESS" \
-        "$VG_SUCCESS"
-
-
-
-    return "$VG_SUCCESS"
+    return "$rc"
 
 }
 
 
 
 #
-# Public API
+# Recovery Execute
 #
 
 vg_recovery_execute()
@@ -217,6 +151,34 @@ vg_recovery_execute()
 
     action="${VG_RECOVERY_ACTION:-NONE}"
     target="${VG_RECOVERY_TARGET:-}"
+
+
+
+    #
+    # Begin transaction
+    #
+
+    vg_recovery_tx_begin \
+        "$action" \
+        "$target"
+
+    rc=$?
+
+
+    if [ "$rc" -ne "$VG_SUCCESS" ]; then
+
+        vg_recovery_executor_set_status \
+            "failed"
+
+        return "$rc"
+
+    fi
+
+
+
+    vg_recovery_executor_set_status \
+        "running"
+
 
 
     case "$action" in
@@ -228,45 +190,102 @@ vg_recovery_execute()
             vg_recovery_retry_module \
                 "$target"
 
-
-            return $?
-
+            rc=$?
 
             ;;
+
 
 
         NONE)
 
 
-            vg_recovery_executor_set \
-                "completed"
-
-
-            return "$VG_SUCCESS"
-
+            rc="$VG_SUCCESS"
 
             ;;
+
 
 
         *)
 
 
-            vg_recovery_executor_set \
-                "failed"
-
-
-            vg_recovery_executor_audit \
-                "RECOVERY_UNSUPPORTED_ACTION" \
-                "$VG_ERR_INVALID"
-
-
-            return "$VG_ERR_INVALID"
-
+            rc="$VG_ERR_INVALID"
 
             ;;
 
-
     esac
+
+
+
+    #
+    # Commit on success
+    #
+
+    if [ "$rc" -eq "$VG_SUCCESS" ]; then
+
+
+        vg_recovery_tx_commit
+
+        tx_rc=$?
+
+
+        if [ "$tx_rc" -ne "$VG_SUCCESS" ]; then
+
+            vg_recovery_executor_set_status \
+                "failed"
+
+            return "$tx_rc"
+
+        fi
+
+
+
+        vg_recovery_executor_set_status \
+            "completed"
+
+
+
+        vg_recovery_executor_audit \
+            "RECOVERY_SUCCESS" \
+            "$VG_SUCCESS"
+
+
+
+        return "$VG_SUCCESS"
+
+    fi
+
+
+
+    #
+    # Rollback on failure
+    #
+
+    vg_recovery_tx_rollback
+
+    tx_rc=$?
+
+
+
+    vg_recovery_executor_set_status \
+        "failed"
+
+
+
+    vg_recovery_executor_audit \
+        "RECOVERY_FAILED" \
+        "$rc"
+
+
+
+    if [ "$tx_rc" -ne "$VG_SUCCESS" ]; then
+
+        return "$tx_rc"
+
+    fi
+
+
+
+    return "$rc"
 
 }
 
