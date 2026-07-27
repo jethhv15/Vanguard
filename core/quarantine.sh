@@ -17,7 +17,10 @@ fi
 # State
 #
 
-VG_QUARANTINE_FILE="${VG_QUARANTINE_FILE:-/tmp/vanguard_quarantine.db}"
+if [ -z "${VG_QUARANTINE_FILE:-}" ]; then
+    VG_QUARANTINE_FILE="/tmp/vanguard_quarantine.db"
+fi
+
 
 VG_QUARANTINE_MODULE=""
 VG_QUARANTINE_REASON=""
@@ -50,7 +53,7 @@ vg_quarantine_prepare()
 
 
 #
-# Add
+# Add Module
 #
 
 vg_quarantine_add()
@@ -90,7 +93,7 @@ EOF
 
 
 #
-# Check
+# Check Module
 #
 
 vg_quarantine_check()
@@ -104,18 +107,31 @@ vg_quarantine_check()
 
 
 
-    grep -q "^MODULE=$module$" \
+    grep -Fqx \
+        "MODULE=$module" \
         "$VG_QUARANTINE_FILE"
 
 
-    return $?
+    rc=$?
+
+
+    if [ "$rc" -eq 0 ]
+    then
+
+        return "$VG_SUCCESS"
+
+    fi
+
+
+
+    return "$VG_ERR_NOT_FOUND"
 
 }
 
 
 
 #
-# Remove
+# Remove Module
 #
 
 vg_quarantine_remove()
@@ -133,9 +149,20 @@ vg_quarantine_remove()
 
 
 
-    awk -v m="$module" '
-    BEGIN { RS="---\n"; ORS="---\n" }
-    $0 !~ "^MODULE="m"$"
+    awk -v target="MODULE=$module" '
+    BEGIN {
+        RS="---\n"
+        ORS="---\n"
+    }
+
+    index($0,target) == 1 {
+        next
+    }
+
+    {
+        print
+    }
+
     ' "$VG_QUARANTINE_FILE" > "$tmp"
 
 
@@ -164,6 +191,7 @@ vg_quarantine_list()
 
     grep "^MODULE=" \
         "$VG_QUARANTINE_FILE"
+
 
 
     return "$VG_SUCCESS"

@@ -13,10 +13,10 @@ fi
 . "$CORE_DIR/parser.sh"
 . "$CORE_DIR/module_validator.sh"
 
-
 [ -f "$CORE_DIR/trust.sh" ] && . "$CORE_DIR/trust.sh"
 [ -f "$CORE_DIR/permission.sh" ] && . "$CORE_DIR/permission.sh"
 [ -f "$CORE_DIR/capability_manager.sh" ] && . "$CORE_DIR/capability_manager.sh"
+[ -f "$CORE_DIR/quarantine.sh" ] && . "$CORE_DIR/quarantine.sh"
 
 
 
@@ -25,11 +25,16 @@ VG_LOADED_MODULE_COUNT=0
 
 
 
+#
+# Security Check
+#
+
 vg_loader_security_check()
 {
 
     module="$1"
     module_id="$2"
+
 
 
     [ -f "$module/security.prop" ] || return "$VG_SUCCESS"
@@ -38,7 +43,9 @@ vg_loader_security_check()
 
     if command -v vg_trust_check >/dev/null 2>&1
     then
+
         vg_trust_check "$module_id" || return $?
+
     fi
 
 
@@ -80,6 +87,10 @@ vg_loader_security_check()
 
 
 
+#
+# Load Module
+#
+
 vg_load_module()
 {
 
@@ -89,6 +100,30 @@ vg_load_module()
 
     [ -d "$module_path" ] \
         || return "$VG_ERR_NOT_FOUND"
+
+
+
+    #
+    # Phase 6.2
+    # Quarantine Enforcement
+    #
+
+    if command -v vg_quarantine_check >/dev/null 2>&1
+    then
+
+        vg_quarantine_check "$module_path"
+
+        qrc=$?
+
+
+        if [ "$qrc" -eq "$VG_SUCCESS" ]
+        then
+
+            return "$VG_ERR_INVALID"
+
+        fi
+
+    fi
 
 
 
@@ -132,6 +167,7 @@ vg_load_module()
     #
 
     entry="$module_path/$VG_MODULE_ENTRY"
+
 
 
     if [ -f "$entry" ]; then
