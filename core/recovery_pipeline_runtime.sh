@@ -13,6 +13,7 @@ fi
 . "$CORE_DIR/recovery_policy_adaptation.sh"
 . "$CORE_DIR/recovery_feedback_loop.sh"
 . "$CORE_DIR/recovery_telemetry.sh"
+. "$CORE_DIR/recovery_analytics_engine.sh"
 
 
 
@@ -60,6 +61,13 @@ vg_runtime_execute_stage()
                 "$VG_SELECTED_STRATEGY" \
                 "COMPLETE" \
                 "SUCCESS" \
+                || return $?
+            ;;
+
+        ANALYTICS)
+
+            vg_recovery_analytics_run \
+                "$VG_TELEMETRY_FILE" \
                 || return $?
             ;;
 

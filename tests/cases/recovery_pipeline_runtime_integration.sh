@@ -11,6 +11,7 @@
 . "$CORE_DIR/recovery_policy_adaptation.sh"
 . "$CORE_DIR/recovery_feedback_loop.sh"
 . "$CORE_DIR/recovery_telemetry.sh"
+. "$CORE_DIR/recovery_analytics_engine.sh"
 . "$CORE_DIR/recovery_pipeline_runtime.sh"
 
 
@@ -53,6 +54,69 @@ vg_assert_equal \
 
 
 vg_assert_equal \
+    "RECOVERY_PIPELINE" \
+    "$VG_TELEMETRY_EVENT" \
+    "Telemetry should record pipeline event"
+
+
+
+vg_assert_equal \
+    "RESTORE" \
+    "$VG_TELEMETRY_ACTION" \
+    "Telemetry should record selected strategy"
+
+
+
+vg_assert_equal \
+    "SUCCESS" \
+    "$VG_TELEMETRY_RESULT" \
+    "Telemetry should record successful recovery"
+
+
+
+vg_assert_equal \
+    "1" \
+    "$VG_ANALYTICS_TOTAL" \
+    "Analytics should count one recovery"
+
+
+
+vg_assert_equal \
+    "1" \
+    "$VG_ANALYTICS_SUCCESS" \
+    "Analytics should count one successful recovery"
+
+
+
+vg_assert_equal \
+    "0" \
+    "$VG_ANALYTICS_FAILED" \
+    "Analytics should report zero failures"
+
+
+
+vg_assert_equal \
+    "100" \
+    "$VG_ANALYTICS_RATE" \
+    "Analytics should report 100 percent success"
+
+
+
+vg_assert_equal \
+    "HIGH" \
+    "$VG_ANALYTICS_SCORE" \
+    "Analytics score should be HIGH"
+
+
+
+vg_assert_equal \
+    "RESTORE" \
+    "$VG_ANALYTICS_BEST_ACTION" \
+    "Analytics should detect best action"
+
+
+
+vg_assert_equal \
     "RESTORE" \
     "$VG_POLICY_ACTION" \
     "Policy should adapt selected strategy"
@@ -91,24 +155,3 @@ vg_assert_equal \
     "CONFIRMED" \
     "$VG_FEEDBACK_LEARNING" \
     "Feedback learning should be confirmed"
-
-
-
-vg_assert_equal \
-    "RECOVERY_PIPELINE" \
-    "$VG_TELEMETRY_EVENT" \
-    "Telemetry should record pipeline event"
-
-
-
-vg_assert_equal \
-    "RESTORE" \
-    "$VG_TELEMETRY_ACTION" \
-    "Telemetry should record selected strategy"
-
-
-
-vg_assert_equal \
-    "SUCCESS" \
-    "$VG_TELEMETRY_RESULT" \
-    "Telemetry should record successful recovery"
