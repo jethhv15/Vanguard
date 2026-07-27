@@ -20,6 +20,7 @@ fi
 . "$CORE_DIR/lifecycle.sh"
 . "$CORE_DIR/executor.sh"
 . "$CORE_DIR/audit.sh"
+. "$CORE_DIR/diagnostic.sh"
 
 
 
@@ -50,6 +51,40 @@ vg_engine_status()
     printf '%s\n' "$VG_ENGINE_STATE"
 
     return "$VG_SUCCESS"
+
+}
+
+
+
+#
+# Diagnostic Failure Handler
+#
+
+vg_engine_fail()
+{
+
+    stage="$1"
+    module="$2"
+    reason="$3"
+    result="$4"
+
+
+    vg_diag_set \
+        "$stage" \
+        "$module" \
+        "$reason" \
+        "$result"
+
+
+    vg_engine_set_state "$VG_ENGINE_FAILED"
+
+
+    vg_engine_audit \
+        "ENGINE_FAILED" \
+        "$result"
+
+
+    return "$result"
 
 }
 
@@ -93,7 +128,6 @@ vg_engine_audit()
 vg_engine_start()
 {
 
-
     if [ "$VG_ENGINE_STATE" = "$VG_ENGINE_READY" ]
     then
 
@@ -101,6 +135,9 @@ vg_engine_start()
 
     fi
 
+
+
+    vg_diag_reset
 
 
     vg_engine_set_state "$VG_ENGINE_BOOTING"
@@ -112,7 +149,11 @@ vg_engine_start()
 
     if [ "$rc" -ne "$VG_SUCCESS" ]; then
 
-        vg_engine_set_state "$VG_ENGINE_FAILED"
+        vg_engine_fail \
+            "CONFIG_LOAD" \
+            "" \
+            "configuration load failed" \
+            "$rc"
 
         return "$rc"
 
@@ -125,7 +166,11 @@ vg_engine_start()
 
     if [ "$rc" -ne "$VG_SUCCESS" ]; then
 
-        vg_engine_set_state "$VG_ENGINE_FAILED"
+        vg_engine_fail \
+            "REGISTRY_RESET" \
+            "" \
+            "registry reset failed" \
+            "$rc"
 
         return "$rc"
 
@@ -138,7 +183,11 @@ vg_engine_start()
 
     if [ "$rc" -ne "$VG_SUCCESS" ]; then
 
-        vg_engine_set_state "$VG_ENGINE_FAILED"
+        vg_engine_fail \
+            "MODULE_SCAN" \
+            "" \
+            "module scan failed" \
+            "$rc"
 
         return "$rc"
 
@@ -159,11 +208,16 @@ vg_engine_start()
         vg_load_module "$module"
         rc=$?
 
+
         if [ "$rc" -ne "$VG_SUCCESS" ]; then
 
             IFS="$OLD_IFS"
 
-            vg_engine_set_state "$VG_ENGINE_FAILED"
+            vg_engine_fail \
+                "MODULE_LOAD" \
+                "$module" \
+                "module loading failed" \
+                "$rc"
 
             return "$rc"
 
@@ -174,11 +228,16 @@ vg_engine_start()
         vg_parse_manifest "$module/module.prop"
         rc=$?
 
+
         if [ "$rc" -ne "$VG_SUCCESS" ]; then
 
             IFS="$OLD_IFS"
 
-            vg_engine_set_state "$VG_ENGINE_FAILED"
+            vg_engine_fail \
+                "MANIFEST_PARSE" \
+                "$module" \
+                "manifest parsing failed" \
+                "$rc"
 
             return "$rc"
 
@@ -198,7 +257,11 @@ vg_engine_start()
 
             IFS="$OLD_IFS"
 
-            vg_engine_set_state "$VG_ENGINE_FAILED"
+            vg_engine_fail \
+                "REGISTRY_ADD" \
+                "$VG_MODULE_ID" \
+                "registry registration failed" \
+                "$rc"
 
             return "$rc"
 
@@ -216,9 +279,14 @@ vg_engine_start()
     vg_planner_build_all
     rc=$?
 
+
     if [ "$rc" -ne "$VG_SUCCESS" ]; then
 
-        vg_engine_set_state "$VG_ENGINE_FAILED"
+        vg_engine_fail \
+            "PLANNER" \
+            "" \
+            "startup planning failed" \
+            "$rc"
 
         return "$rc"
 
@@ -231,9 +299,14 @@ vg_engine_start()
 
     rc=$?
 
+
     if [ "$rc" -ne "$VG_SUCCESS" ]; then
 
-        vg_engine_set_state "$VG_ENGINE_FAILED"
+        vg_engine_fail \
+            "REGISTRY_ORDER" \
+            "" \
+            "registry reorder failed" \
+            "$rc"
 
         return "$rc"
 
@@ -247,7 +320,11 @@ vg_engine_start()
 
     if [ "$rc" -ne "$VG_SUCCESS" ]; then
 
-        vg_engine_set_state "$VG_ENGINE_FAILED"
+        vg_engine_fail \
+            "EXECUTOR" \
+            "" \
+            "executor start failed" \
+            "$rc"
 
         return "$rc"
 
@@ -278,14 +355,17 @@ vg_engine_start()
 vg_engine_stop()
 {
 
-
     vg_executor_stop
     rc=$?
 
 
     if [ "$rc" -ne "$VG_SUCCESS" ]; then
 
-        vg_engine_set_state "$VG_ENGINE_FAILED"
+        vg_engine_fail \
+            "ENGINE_STOP" \
+            "" \
+            "executor stop failed" \
+            "$rc"
 
         return "$rc"
 
