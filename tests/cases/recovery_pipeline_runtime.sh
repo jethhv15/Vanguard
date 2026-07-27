@@ -21,6 +21,6 @@ vg_assert_equal \
     "Runtime should complete"
 
 vg_assert_equal \
-    "KNOWLEDGE" \
+    "INTEGRATION" \
     "$VG_RUNTIME_STAGE" \
-    "Runtime should finish at knowledge stage"
+    "Runtime should finish at integration stage"

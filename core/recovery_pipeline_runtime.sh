@@ -16,6 +16,7 @@ fi
 . "$CORE_DIR/recovery_analytics_engine.sh"
 . "$CORE_DIR/recovery_optimization_engine.sh"
 . "$CORE_DIR/recovery_knowledge_base.sh"
+. "$CORE_DIR/recovery_knowledge_integrator.sh"
 
 
 
@@ -116,6 +117,19 @@ vg_runtime_execute_stage()
                 || return $?
             ;;
 
+        INTEGRATION)
+
+            vg_recovery_integrate_knowledge \
+                "RECOVERY_PIPELINE" \
+                "$VG_SELECTED_STRATEGY" \
+                || return $?
+
+            vg_recovery_integrator_compare \
+                "$VG_SELECTED_STRATEGY" \
+                "$VG_INTEGRATOR_ACTION" \
+                || return $?
+            ;;
+
     esac
 
     return "$VG_SUCCESS"
@@ -144,7 +158,8 @@ vg_runtime_run()
         OPTIMIZATION \
         POLICY \
         FEEDBACK \
-        KNOWLEDGE
+        KNOWLEDGE \
+        INTEGRATION
     do
 
         vg_runtime_execute_stage "$stage" || {

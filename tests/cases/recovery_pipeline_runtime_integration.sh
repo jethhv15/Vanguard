@@ -14,6 +14,7 @@
 . "$CORE_DIR/recovery_analytics_engine.sh"
 . "$CORE_DIR/recovery_optimization_engine.sh"
 . "$CORE_DIR/recovery_knowledge_base.sh"
+. "$CORE_DIR/recovery_knowledge_integrator.sh"
 . "$CORE_DIR/recovery_pipeline_runtime.sh"
 
 
@@ -36,7 +37,7 @@ vg_assert_equal \
 
 
 vg_assert_equal \
-    "KNOWLEDGE" \
+    "INTEGRATION" \
     "$VG_RUNTIME_STAGE" \
     "Pipeline should reach final stage"
 
@@ -242,3 +243,42 @@ vg_assert_equal \
     "HIGH" \
     "$VG_KB_CONFIDENCE" \
     "Knowledge Base confidence should be HIGH"
+
+
+
+#
+# Knowledge Integrator
+#
+
+vg_assert_equal \
+    "RECOVERY_PIPELINE" \
+    "$VG_INTEGRATOR_PATTERN" \
+    "Integrator should keep recovery pattern"
+
+
+
+vg_assert_equal \
+    "RESTORE" \
+    "$VG_INTEGRATOR_ACTION" \
+    "Integrator should use learned strategy"
+
+
+
+vg_assert_equal \
+    "HIGH" \
+    "$VG_INTEGRATOR_CONFIDENCE" \
+    "Integrator confidence should be HIGH"
+
+
+
+vg_assert_equal \
+    "knowledge_base" \
+    "$VG_INTEGRATOR_SOURCE" \
+    "Integrator should use knowledge base"
+
+
+
+vg_assert_equal \
+    "decision matches knowledge" \
+    "$VG_INTEGRATOR_REASON" \
+    "Integrator should confirm matching decision"
