@@ -15,6 +15,7 @@ fi
 . "$CORE_DIR/recovery_telemetry.sh"
 . "$CORE_DIR/recovery_analytics_engine.sh"
 . "$CORE_DIR/recovery_optimization_engine.sh"
+. "$CORE_DIR/recovery_knowledge_base.sh"
 
 
 
@@ -97,6 +98,21 @@ vg_runtime_execute_stage()
                 "$VG_SELECTED_STRATEGY" \
                 "SUCCESS" \
                 "SUCCESS" \
+                || return $?
+            ;;
+
+        KNOWLEDGE)
+
+            rm -f "$VG_KB_FILE"
+
+            vg_recovery_kb_store \
+                "RECOVERY_PIPELINE" \
+                "$VG_SELECTED_STRATEGY" \
+                "100" \
+                || return $?
+
+            vg_recovery_kb_lookup \
+                "RECOVERY_PIPELINE" \
                 || return $?
             ;;
 

@@ -13,12 +13,14 @@
 . "$CORE_DIR/recovery_telemetry.sh"
 . "$CORE_DIR/recovery_analytics_engine.sh"
 . "$CORE_DIR/recovery_optimization_engine.sh"
+. "$CORE_DIR/recovery_knowledge_base.sh"
 . "$CORE_DIR/recovery_pipeline_runtime.sh"
 
 
 
 rm -f "$VG_STRATEGY_FILE"
 rm -f "$VG_TELEMETRY_FILE"
+rm -f "$VG_KB_FILE"
 
 
 
@@ -40,6 +42,10 @@ vg_assert_equal \
 
 
 
+#
+# Strategy
+#
+
 vg_assert_equal \
     "RESTORE" \
     "$VG_SELECTED_STRATEGY" \
@@ -53,6 +59,10 @@ vg_assert_equal \
     "Runtime should keep best strategy score"
 
 
+
+#
+# Telemetry
+#
 
 vg_assert_equal \
     "RECOVERY_PIPELINE" \
@@ -74,6 +84,10 @@ vg_assert_equal \
     "Telemetry should record successful recovery"
 
 
+
+#
+# Analytics
+#
 
 vg_assert_equal \
     "1" \
@@ -117,6 +131,10 @@ vg_assert_equal \
 
 
 
+#
+# Optimization
+#
+
 vg_assert_equal \
     "RESTORE" \
     "$VG_OPT_ACTION" \
@@ -145,6 +163,10 @@ vg_assert_equal \
 
 
 
+#
+# Policy
+#
+
 vg_assert_equal \
     "RESTORE" \
     "$VG_POLICY_ACTION" \
@@ -166,6 +188,10 @@ vg_assert_equal \
 
 
 
+#
+# Feedback
+#
+
 vg_assert_equal \
     "RESTORE" \
     "$VG_FEEDBACK_ACTION" \
@@ -184,3 +210,35 @@ vg_assert_equal \
     "CONFIRMED" \
     "$VG_FEEDBACK_LEARNING" \
     "Feedback learning should be confirmed"
+
+
+
+#
+# Knowledge Base
+#
+
+vg_assert_equal \
+    "RECOVERY_PIPELINE" \
+    "$VG_KB_PATTERN" \
+    "Knowledge Base should store pipeline pattern"
+
+
+
+vg_assert_equal \
+    "RESTORE" \
+    "$VG_KB_STRATEGY" \
+    "Knowledge Base should store selected strategy"
+
+
+
+vg_assert_equal \
+    "100" \
+    "$VG_KB_SUCCESS" \
+    "Knowledge Base should store success rate"
+
+
+
+vg_assert_equal \
+    "HIGH" \
+    "$VG_KB_CONFIDENCE" \
+    "Knowledge Base confidence should be HIGH"
