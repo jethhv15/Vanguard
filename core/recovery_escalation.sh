@@ -21,6 +21,7 @@ VG_RECOVERY_ESCALATION_ACTION="NONE"
 VG_RECOVERY_ESCALATION_REASON=""
 
 
+
 #
 # Reset
 #
@@ -49,8 +50,9 @@ vg_recovery_escalate()
 
 
     VG_RECOVERY_ESCALATION_LEVEL=$(
-        echo "$VG_RECOVERY_ESCALATION_LEVEL + 1" | bc
+        expr "$VG_RECOVERY_ESCALATION_LEVEL" + 1
     )
+
 
 
     case "$VG_RECOVERY_ESCALATION_LEVEL" in
@@ -79,8 +81,41 @@ vg_recovery_escalate()
     esac
 
 
+
     VG_RECOVERY_ESCALATION_REASON="$reason"
 
+
+    return "$VG_SUCCESS"
+
+}
+
+
+
+#
+# Get Level
+#
+
+vg_recovery_escalation_level()
+{
+
+    printf '%s\n' \
+        "$VG_RECOVERY_ESCALATION_LEVEL"
+
+    return "$VG_SUCCESS"
+
+}
+
+
+
+#
+# Get Action
+#
+
+vg_recovery_escalation_action()
+{
+
+    printf '%s\n' \
+        "$VG_RECOVERY_ESCALATION_ACTION"
 
     return "$VG_SUCCESS"
 
@@ -104,5 +139,6 @@ vg_recovery_escalation_status()
     printf '%s\n' \
         "REASON : $VG_RECOVERY_ESCALATION_REASON"
 
+    return "$VG_SUCCESS"
 
 }
