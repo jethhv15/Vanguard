@@ -10,6 +10,7 @@ fi
 
 . "$CORE_DIR/constants.sh"
 . "$CORE_DIR/recovery_strategy_manager.sh"
+. "$CORE_DIR/recovery_policy_adaptation.sh"
 
 
 
@@ -33,53 +34,31 @@ vg_runtime_execute_stage()
 
     VG_RUNTIME_STAGE="$stage"
 
-
-
     case "$stage" in
 
         STRATEGY)
 
-            #
-            # Start with a clean strategy database
-            #
-
             rm -f "$VG_STRATEGY_FILE"
-
-
 
             vg_strategy_prepare || return $?
 
+            vg_strategy_register "RESTORE" "95" || return $?
+            vg_strategy_register "ROLLBACK" "80" || return $?
+            vg_strategy_register "RETRY" "50" || return $?
 
+            vg_strategy_select_best || return $?
+            ;;
 
-            vg_strategy_register \
-                "RESTORE" \
-                "95" \
-                || return $?
+        POLICY)
 
-
-
-            vg_strategy_register \
-                "ROLLBACK" \
-                "80" \
-                || return $?
-
-
-
-            vg_strategy_register \
-                "RETRY" \
-                "50" \
-                || return $?
-
-
-
-            vg_strategy_select_best \
+            vg_policy_adapt \
+                "$VG_SELECTED_STRATEGY" \
+                "$VG_STRATEGY_SCORE" \
                 || return $?
 
             ;;
 
     esac
-
-
 
     return "$VG_SUCCESS"
 
@@ -95,8 +74,6 @@ vg_runtime_run()
 {
 
     VG_RUNTIME_STATUS="RUNNING"
-
-
 
     for stage in \
         DETECTION \
@@ -122,11 +99,7 @@ vg_runtime_run()
 
     done
 
-
-
     VG_RUNTIME_STATUS="COMPLETE"
-
-
 
     return "$VG_SUCCESS"
 
@@ -141,8 +114,7 @@ vg_runtime_run()
 vg_runtime_status()
 {
 
-    printf '%s\n' \
-        "$VG_RUNTIME_STATUS"
+    printf '%s\n' "$VG_RUNTIME_STATUS"
 
 }
 
@@ -155,7 +127,6 @@ vg_runtime_status()
 vg_runtime_stage()
 {
 
-    printf '%s\n' \
-        "$VG_RUNTIME_STAGE"
+    printf '%s\n' "$VG_RUNTIME_STAGE"
 
 }
