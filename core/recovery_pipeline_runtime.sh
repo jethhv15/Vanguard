@@ -12,6 +12,7 @@ fi
 . "$CORE_DIR/recovery_strategy_manager.sh"
 . "$CORE_DIR/recovery_policy_adaptation.sh"
 . "$CORE_DIR/recovery_feedback_loop.sh"
+. "$CORE_DIR/recovery_telemetry.sh"
 
 
 
@@ -48,6 +49,18 @@ vg_runtime_execute_stage()
             vg_strategy_register "RETRY" "50" || return $?
 
             vg_strategy_select_best || return $?
+            ;;
+
+        TELEMETRY)
+
+            rm -f "$VG_TELEMETRY_FILE"
+
+            vg_telemetry_record \
+                "RECOVERY_PIPELINE" \
+                "$VG_SELECTED_STRATEGY" \
+                "COMPLETE" \
+                "SUCCESS" \
+                || return $?
             ;;
 
         POLICY)

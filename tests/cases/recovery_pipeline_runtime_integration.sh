@@ -10,11 +10,13 @@
 . "$CORE_DIR/recovery_strategy_manager.sh"
 . "$CORE_DIR/recovery_policy_adaptation.sh"
 . "$CORE_DIR/recovery_feedback_loop.sh"
+. "$CORE_DIR/recovery_telemetry.sh"
 . "$CORE_DIR/recovery_pipeline_runtime.sh"
 
 
 
 rm -f "$VG_STRATEGY_FILE"
+rm -f "$VG_TELEMETRY_FILE"
 
 
 
@@ -89,3 +91,24 @@ vg_assert_equal \
     "CONFIRMED" \
     "$VG_FEEDBACK_LEARNING" \
     "Feedback learning should be confirmed"
+
+
+
+vg_assert_equal \
+    "RECOVERY_PIPELINE" \
+    "$VG_TELEMETRY_EVENT" \
+    "Telemetry should record pipeline event"
+
+
+
+vg_assert_equal \
+    "RESTORE" \
+    "$VG_TELEMETRY_ACTION" \
+    "Telemetry should record selected strategy"
+
+
+
+vg_assert_equal \
+    "SUCCESS" \
+    "$VG_TELEMETRY_RESULT" \
+    "Telemetry should record successful recovery"
