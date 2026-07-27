@@ -11,6 +11,7 @@ fi
 . "$CORE_DIR/constants.sh"
 . "$CORE_DIR/recovery_strategy_manager.sh"
 . "$CORE_DIR/recovery_policy_adaptation.sh"
+. "$CORE_DIR/recovery_feedback_loop.sh"
 
 
 
@@ -55,7 +56,15 @@ vg_runtime_execute_stage()
                 "$VG_SELECTED_STRATEGY" \
                 "$VG_STRATEGY_SCORE" \
                 || return $?
+            ;;
 
+        FEEDBACK)
+
+            vg_feedback_process \
+                "$VG_SELECTED_STRATEGY" \
+                "SUCCESS" \
+                "SUCCESS" \
+                || return $?
             ;;
 
     esac

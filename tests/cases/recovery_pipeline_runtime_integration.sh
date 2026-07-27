@@ -9,6 +9,7 @@
 
 . "$CORE_DIR/recovery_strategy_manager.sh"
 . "$CORE_DIR/recovery_policy_adaptation.sh"
+. "$CORE_DIR/recovery_feedback_loop.sh"
 . "$CORE_DIR/recovery_pipeline_runtime.sh"
 
 
@@ -67,3 +68,24 @@ vg_assert_equal \
     "95" \
     "$VG_POLICY_CONFIDENCE" \
     "Policy confidence should be preserved"
+
+
+
+vg_assert_equal \
+    "RESTORE" \
+    "$VG_FEEDBACK_ACTION" \
+    "Feedback should evaluate selected strategy"
+
+
+
+vg_assert_equal \
+    "100" \
+    "$VG_FEEDBACK_SCORE" \
+    "Feedback score should be perfect"
+
+
+
+vg_assert_equal \
+    "CONFIRMED" \
+    "$VG_FEEDBACK_LEARNING" \
+    "Feedback learning should be confirmed"
