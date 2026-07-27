@@ -17,6 +17,7 @@ fi
 . "$CORE_DIR/recovery_optimization_engine.sh"
 . "$CORE_DIR/recovery_knowledge_base.sh"
 . "$CORE_DIR/recovery_knowledge_integrator.sh"
+. "$CORE_DIR/recovery_learning_engine.sh"
 
 
 
@@ -130,6 +131,15 @@ vg_runtime_execute_stage()
                 || return $?
             ;;
 
+        LEARNING)
+
+            vg_recovery_learning_analyze \
+                "$VG_INTEGRATOR_ACTION" \
+                "1" \
+                "1" \
+                || return $?
+            ;;
+
     esac
 
     return "$VG_SUCCESS"
@@ -159,7 +169,8 @@ vg_runtime_run()
         POLICY \
         FEEDBACK \
         KNOWLEDGE \
-        INTEGRATION
+        INTEGRATION \
+        LEARNING
     do
 
         vg_runtime_execute_stage "$stage" || {

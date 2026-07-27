@@ -15,6 +15,7 @@
 . "$CORE_DIR/recovery_optimization_engine.sh"
 . "$CORE_DIR/recovery_knowledge_base.sh"
 . "$CORE_DIR/recovery_knowledge_integrator.sh"
+. "$CORE_DIR/recovery_learning_engine.sh"
 . "$CORE_DIR/recovery_pipeline_runtime.sh"
 
 
@@ -37,7 +38,7 @@ vg_assert_equal \
 
 
 vg_assert_equal \
-    "INTEGRATION" \
+    "LEARNING" \
     "$VG_RUNTIME_STAGE" \
     "Pipeline should reach final stage"
 
@@ -282,3 +283,49 @@ vg_assert_equal \
     "decision matches knowledge" \
     "$VG_INTEGRATOR_REASON" \
     "Integrator should confirm matching decision"
+
+
+
+#
+# Learning Engine
+#
+
+vg_assert_equal \
+    "RESTORE" \
+    "$VG_LEARNING_ACTION" \
+    "Learning should analyze selected strategy"
+
+
+
+vg_assert_equal \
+    "1" \
+    "$VG_LEARNING_ATTEMPTS" \
+    "Learning should record one attempt"
+
+
+
+vg_assert_equal \
+    "1" \
+    "$VG_LEARNING_SUCCESS" \
+    "Learning should record one success"
+
+
+
+vg_assert_equal \
+    "100" \
+    "$VG_LEARNING_RATE" \
+    "Learning should calculate perfect success rate"
+
+
+
+vg_assert_equal \
+    "RESTORE" \
+    "$VG_LEARNING_RECOMMENDATION" \
+    "Learning should keep effective strategy"
+
+
+
+vg_assert_equal \
+    "strategy effective" \
+    "$VG_LEARNING_REASON" \
+    "Learning should classify strategy as effective"
