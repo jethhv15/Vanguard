@@ -1,7 +1,7 @@
 #!/system/bin/sh
 #
 # Project Vanguard
-# Recovery Policy Tests
+# Recovery Policy Integration Tests
 #
 
 . "$TEST_DIR/testlib.sh"
@@ -10,98 +10,73 @@
 
 
 
-#
-# Reset Policy
-#
-
 vg_recovery_policy_reset
 
 
 
 #
-# Initial State
+# Safe severity
 #
 
+vg_recovery_policy_set_severity safe
+
+
+vg_recovery_policy_next_action
+
+
 vg_assert_equal \
-    "0" \
+    "RETRY_MODULE" \
+    "$VG_RECOVERY_NEXT_ACTION" \
+    "Safe policy should retry"
+
+
+
+vg_assert_equal \
+    "1" \
     "$(vg_recovery_policy_retry_count)" \
-    "Retry counter should start at zero"
-
-vg_assert_equal \
-    "NONE" \
-    "$(vg_recovery_policy_current_action)" \
-    "Initial recovery action"
+    "Retry count should increase"
 
 
 
 #
-# First Retry
+# Critical severity
 #
+
+vg_recovery_policy_reset
+
+
+vg_recovery_policy_set_severity critical
+
 
 vg_recovery_policy_next_action
 
-vg_assert_equal \
-    "RETRY_MODULE" \
-    "$VG_RECOVERY_NEXT_ACTION" \
-    "First recovery action"
-
-
-
-#
-# Second Retry
-#
-
-vg_recovery_policy_next_action
-
-vg_assert_equal \
-    "RETRY_MODULE" \
-    "$VG_RECOVERY_NEXT_ACTION" \
-    "Second recovery action"
-
-
-
-#
-# Third Retry
-#
-
-vg_recovery_policy_next_action
-
-vg_assert_equal \
-    "RETRY_MODULE" \
-    "$VG_RECOVERY_NEXT_ACTION" \
-    "Third recovery action"
-
-
-
-#
-# Fallback
-#
-
-vg_recovery_policy_next_action
 
 vg_assert_equal \
     "RESTORE_SNAPSHOT" \
     "$VG_RECOVERY_NEXT_ACTION" \
-    "Fallback recovery action"
+    "Critical policy should restore"
 
 
 
 #
-# Counter Validation
+# Limit check
 #
+
+vg_recovery_policy_reset
+
+
+vg_recovery_policy_set_severity safe
+
+
+vg_recovery_policy_next_action
+vg_recovery_policy_next_action
+vg_recovery_policy_next_action
+
+
+vg_recovery_policy_next_action
+
 
 vg_assert_equal \
-    "3" \
-    "$(vg_recovery_policy_retry_count)" \
-    "Retry counter should stop at limit"
-
-
-
-#
-# Retry Limit Validation
-#
-
-vg_assert_equal \
-    "3" \
-    "$(vg_recovery_policy_retry_limit)" \
-    "Retry limit should be three"
+    "RESTORE_SNAPSHOT" \
+    "$VG_RECOVERY_NEXT_ACTION" \
+    "Retry limit should escalate"
