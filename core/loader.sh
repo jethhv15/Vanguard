@@ -1,7 +1,7 @@
 #!/system/bin/sh
 #
 # Project Vanguard
-# Module Loader
+# Secure Module Loader
 #
 
 if [ -z "${CORE_DIR:-}" ]; then
@@ -10,6 +10,8 @@ fi
 
 
 . "$CORE_DIR/constants.sh"
+. "$CORE_DIR/parser.sh"
+. "$CORE_DIR/module_validator.sh"
 
 
 [ -f "$CORE_DIR/trust.sh" ] && . "$CORE_DIR/trust.sh"
@@ -93,31 +95,22 @@ vg_load_module()
     manifest="$module_path/module.prop"
 
 
-    [ -f "$manifest" ] \
-        || return "$VG_ERR_INVALID"
+
+    vg_parse_manifest "$manifest" \
+        || return $?
 
 
 
-    module_id=""
-
-
-    while IFS='=' read -r key value
-    do
-
-        case "$key" in
-
-            id)
-                module_id="$value"
-                ;;
-
-        esac
-
-    done < "$manifest"
+    VG_MODULE_PATH="$module_path"
 
 
 
-    [ -n "$module_id" ] \
-        || return "$VG_ERR_INVALID"
+    vg_validate_module \
+        || return $?
+
+
+
+    module_id="$VG_MODULE_ID"
 
 
 
@@ -135,16 +128,27 @@ vg_load_module()
 
 
     #
-    # Load module implementation
+    # Load implementation
     #
 
-    if [ -f "$module_path/module.sh" ]; then
+    entry="$module_path/$VG_MODULE_ENTRY"
+
+
+    if [ -f "$entry" ]; then
+
+        . "$entry"
+
+    elif [ -f "$module_path/module.sh" ]; then
 
         . "$module_path/module.sh"
 
     elif [ -f "$module_path/main.sh" ]; then
 
         . "$module_path/main.sh"
+
+    else
+
+        return "$VG_ERR_NOT_FOUND"
 
     fi
 

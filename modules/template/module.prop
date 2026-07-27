@@ -1,6 +1,9 @@
 id=template
 name=Vanguard Template Module
 version=1.0.0
+versionCode=1
 author=Jethh
 description=Project Vanguard module template
 api=1
+entry=module.sh
+type=template
