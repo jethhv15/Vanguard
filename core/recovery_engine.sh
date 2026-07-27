@@ -8,7 +8,10 @@ if [ -z "${CORE_DIR:-}" ]; then
     CORE_DIR="$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)"
 fi
 
+
 . "$CORE_DIR/constants.sh"
+. "$CORE_DIR/recovery_policy.sh"
+
 
 
 #
@@ -74,8 +77,12 @@ vg_recovery_decide()
 
     if [ -n "${VG_DIAGNOSTIC_MODULE:-}" ]; then
 
+
+        vg_recovery_policy_next_action
+
+
         vg_recovery_set \
-            "RETRY_MODULE" \
+            "$VG_RECOVERY_NEXT_ACTION" \
             "$VG_DIAGNOSTIC_MODULE" \
             "safe" \
             "module startup failure"
@@ -92,6 +99,7 @@ vg_recovery_decide()
     #
 
     if [ "${VG_DIAGNOSTIC_REASON:-}" = "AUDIT_CORRUPTED" ]; then
+
 
         vg_recovery_set \
             "RESTORE_SNAPSHOT" \
@@ -112,6 +120,7 @@ vg_recovery_decide()
 
     if [ "${VG_RUNTIME_VALIDATED:-}" != "true" ]; then
 
+
         vg_recovery_set \
             "REBOOT_ENGINE" \
             "runtime" \
@@ -130,6 +139,7 @@ vg_recovery_decide()
     #
 
     if [ "${VG_HEALTH_STATUS:-}" = "degraded" ]; then
+
 
         vg_recovery_set \
             "SAFE_MODE" \
